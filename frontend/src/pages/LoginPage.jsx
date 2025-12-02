@@ -33,24 +33,22 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* 상단 네이비 헤더 */}
-      <header className="h-14 bg-blue-900 text-white flex items-center justify-center px-4 shadow">
-        <h1 className="text-sm font-semibold tracking-wide">스마트 출석 시스템</h1>
-      </header>
-
       {/* 콘텐츠 영역 */}
       <main className="flex-1 flex justify-center px-4 py-6">
         <div className="w-full max-w-md">
           {/* 메인 카드 */}
-          <div className="bg-white rounded-3xl shadow-md px-6 py-8">
-            {/* 프로필 아바타 영역 */}
-            <div className="flex flex-col items-center">
-              <div className="w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                <div className="w-16 h-16 border border-slate-300 rounded-full flex items-center justify-center">
-                  <span className="text-slate-400 text-3xl">👤</span>
-                </div>
-              </div>
+          <div className="bg-white rounded-3xl shadow-md px-6 py-12">
+            {/* 로고 영역 */}
+            <div className="flex justify-center mb-8 pb-8">
+              <img 
+                src="/login-logo.png" 
+                alt="영남대학교 로고" 
+                className="h-12 object-contain"
+              />
+            </div>
 
+            {/* 제목 영역 */}
+            <div className="text-center mb-8">
               <h2 className="text-xl font-semibold text-gray-900">캠퍼스 출석 로그인</h2>
               <p className="mt-1 text-sm text-gray-500">
                 학교 계정으로 로그인 후 모바일 출석을 진행하세요.
@@ -58,20 +56,31 @@ function LoginPage() {
             </div>
 
             {/* 로그인 폼 */}
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label
                   htmlFor="studentId"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  학번 / 아이디
+                  학번
                 </label>
                 <input
                   id="studentId"
                   type="text"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{
+                    '--tw-ring-color': 'rgb(0, 170, 202)',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'rgb(0, 170, 202)'
+                    e.target.style.boxShadow = '0 0 0 2px rgb(0, 170, 202)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = ''
+                    e.target.style.boxShadow = ''
+                  }}
                   placeholder="예) 202212345"
                 />
               </div>
@@ -88,7 +97,18 @@ function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{
+                    '--tw-ring-color': 'rgb(0, 170, 202)',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'rgb(0, 170, 202)'
+                    e.target.style.boxShadow = '0 0 0 2px rgb(0, 170, 202)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = ''
+                    e.target.style.boxShadow = ''
+                  }}
                   placeholder="비밀번호를 입력하세요"
                 />
               </div>
@@ -99,10 +119,23 @@ function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="mt-2 w-full rounded-2xl bg-blue-800 hover:bg-blue-900 text-white py-3 text-sm font-semibold flex items-center justify-center gap-2 shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                className="mt-6 w-full rounded-2xl text-white py-4 text-sm font-semibold flex items-center justify-center gap-2 shadow-md disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+                style={{
+                  backgroundColor: isLoading ? 'rgb(157, 157, 156)' : 'rgb(0, 170, 202)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoading) {
+                    e.target.style.backgroundColor = 'rgb(21, 57, 116)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading) {
+                    e.target.style.backgroundColor = 'rgb(0, 170, 202)'
+                  }
+                }}
               >
-                <span className="text-lg">🔐</span>
-                <span>{isLoading ? '로그인 중...' : '학교 계정으로 로그인'}</span>
+                <span className="text-lg"></span>
+                <span>{isLoading ? '로그인 중...' : '로그인'}</span>
               </button>
             </form>
           </div>
@@ -113,7 +146,7 @@ function LoginPage() {
               Yeungnam University 출석 시스템 (Mock)
             </p>
             <p className="mt-1">
-              실제 서비스에서는 학교 통합 로그인과 연동되며,
+              실제 서비스로 구현된다면, 학교 통합 로그인과 연동되어
               <br />
               출석 기록은 학교 서버에 안전하게 저장됩니다.
             </p>
