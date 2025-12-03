@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import { getCurrentUser } from '../api/auth'
@@ -7,6 +7,7 @@ import { getTodayLectures } from '../api/attendance'
 
 function AttendanceTodayPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [studentInfo, setStudentInfo] = useState(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
@@ -39,9 +40,10 @@ function AttendanceTodayPage() {
     fetchUser()
   }, [navigate])
 
-  // 오늘의 수업 목록 가져오기
+  // 오늘의 수업 목록 가져오기 (페이지 마운트 시 및 location 변경 시)
   useEffect(() => {
     const fetchLectures = async () => {
+      setIsLoadingLectures(true)
       try {
         const lectures = await getTodayLectures()
         setTodayLectures(lectures)
@@ -53,13 +55,14 @@ function AttendanceTodayPage() {
     }
 
     fetchLectures()
-  }, [])
+  }, [location]) // location이 변경될 때마다 데이터 다시 가져오기
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
       const lectures = await getTodayLectures()
-      setTodayLectures(lectures)
+      // 상태를 강제로 업데이트하기 위해 새로운 배열로 설정
+      setTodayLectures([...lectures])
     } catch (error) {
       console.error('Failed to refresh today lectures:', error)
     } finally {
@@ -68,11 +71,11 @@ function AttendanceTodayPage() {
   }
 
   const handleAttendanceClick = (lecture) => {
-    // 미확인 상태가 아닐 때만 클릭 가능 (추후 출석 가능 시간대 체크 추가)
-    if (lecture.attendanceStatus === '미확인') {
+    // 미확인 상태일 때만 출석체크 페이지로 이동
+    if (lecture.attendanceStatus !== '미확인') {
       return
     }
-    // TODO: 출석 가능 시간대 체크
+    // 출석 가능 시간대 체크는 추후 추가 예정
     navigate(`/attendance?token=mock-token-${lecture.id}`)
   }
 
@@ -147,8 +150,8 @@ function AttendanceTodayPage() {
             <div className="flex justify-center mb-6">
               <button
                 onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="px-6 py-2 rounded-xl border-2 transition-colors disabled:opacity-50"
+                disabled={isRefreshing || isLoadingLectures}
+                className="px-6 py-2 rounded-xl border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   borderColor: 'rgb(0, 170, 202)',
                   color: 'rgb(0, 170, 202)',
@@ -156,7 +159,7 @@ function AttendanceTodayPage() {
               >
                 <div className="flex items-center gap-2">
                   <svg
-                    className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                    className={`w-4 h-4 ${isRefreshing || isLoadingLectures ? 'animate-spin' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -168,7 +171,9 @@ function AttendanceTodayPage() {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  <span className="text-sm font-medium">재조회</span>
+                  <span className="text-sm font-medium">
+                    {isRefreshing || isLoadingLectures ? '조회 중...' : '재조회'}
+                  </span>
                 </div>
               </button>
             </div>
@@ -268,8 +273,8 @@ function AttendanceTodayPage() {
                   {/* 출석 상태 버튼 */}
                   <button
                     onClick={() => handleAttendanceClick(lecture)}
-                    disabled={lecture.attendanceStatus === '미확인'}
-                    className="w-full rounded-2xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:cursor-default"
+                    disabled={lecture.attendanceStatus !== '미확인'}
+                    className="w-full rounded-2xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:cursor-default disabled:opacity-75"
                       style={style}
                   >
                       <span>{text}</span>

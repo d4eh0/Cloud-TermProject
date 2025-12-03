@@ -183,7 +183,9 @@ function AttendancePage() {
         return
       }
       
-      // 성공 시 오늘의 출결현황으로 이동
+      // 성공 시 성공 메시지 표시 후 오늘의 출결현황으로 이동
+      setIsCheckingIn(false)
+      alert('출석 체크가 완료되었습니다.')
       navigate('/attendance/today')
     } catch (error) {
       setIsCheckingIn(false)
