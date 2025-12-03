@@ -1,8 +1,10 @@
 package com.yu.cloudattend.yu_cloudattend.config;
 
+import com.yu.cloudattend.yu_cloudattend.entity.ClassSession;
 import com.yu.cloudattend.yu_cloudattend.entity.Course;
 import com.yu.cloudattend.yu_cloudattend.entity.Student;
 import com.yu.cloudattend.yu_cloudattend.entity.Takes;
+import com.yu.cloudattend.yu_cloudattend.repository.ClassSessionRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.CourseRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.StudentRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.TakesRepository;
@@ -11,6 +13,14 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Configuration
 @RequiredArgsConstructor
 public class DataInitializer {
@@ -18,6 +28,7 @@ public class DataInitializer {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
     private final TakesRepository takesRepository;
+    private final ClassSessionRepository classSessionRepository;
 
     @Bean
     public ApplicationRunner initData() {
@@ -33,25 +44,102 @@ public class DataInitializer {
                         return studentRepository.save(s);
                     });
 
-            // 2) 필요한 과목(운영체제, 컴퓨터구조, 클라우드컴퓨팅) 조회
+            // 2) 과목(운영체제, 컴퓨터구조, 클라우드컴퓨팅) 조회 또는 생성
             Course os = courseRepository.findByCourseCode("1102")
-                    .orElse(null);
-            Course arch = courseRepository.findByCourseCode("1103")
-                    .orElse(null);
-            Course cloud = courseRepository.findByCourseCode("1104")
-                    .orElse(null);
+                    .orElseGet(() -> courseRepository.save(
+                            new Course(null, "운영체제", "1102", "IT관(E21-114)")
+                    ));
 
-            if (os == null || arch == null || cloud == null) {
-                System.out.println("[DataInitializer] 필요한 과목(1102, 1103, 1104) 중 하나 이상이 존재하지 않아 Takes 데이터를 추가하지 않습니다.");
-                return;
+            Course arch = courseRepository.findByCourseCode("1103")
+                    .orElseGet(() -> courseRepository.save(
+                            new Course(null, "컴퓨터구조", "1103", "IT관(E21-114)")
+                    ));
+
+            Course cloud = courseRepository.findByCourseCode("1104")
+                    .orElseGet(() -> courseRepository.save(
+                            new Course(null, "클라우드컴퓨팅", "1104", "IT관(E21-114)")
+                    ));
+
+            List<Course> courses = Arrays.asList(os, arch, cloud);
+
+            // 3) 학생-과목 수강 관계(Takes) 생성 (중복 방지)
+            List<Takes> existingTakes = takesRepository.findByStudent(student);
+            Set<Long> existingCourseIds = existingTakes.stream()
+                    .map(t -> t.getCourse().getId())
+                    .collect(Collectors.toSet());
+
+            for (Course course : courses) {
+                if (!existingCourseIds.contains(course.getId())) {
+                    takesRepository.save(new Takes(null, student, course));
+                }
             }
 
-            // 3) 학생-과목 수강 관계(Takes) 생성 (클라우드컴퓨팅, 운영체제, 컴퓨터구조 3개만)
-            takesRepository.save(new Takes(null, student, os));
-            takesRepository.save(new Takes(null, student, arch));
-            takesRepository.save(new Takes(null, student, cloud));
+            // 4) 오늘 날짜 기준 ClassSession 생성 (이미 있으면 추가하지 않음)
+            LocalDate today = LocalDate.now();
+            List<ClassSession> existingSessions =
+                    classSessionRepository.findByCourseInAndSessionDate(courses, today);
 
-            System.out.println("[DataInitializer] studentId=22211111 학생의 Takes 데이터가 추가되었습니다.");
+            if (existingSessions.isEmpty()) {
+                // 오늘 요일에 따라 해당 요일의 수업 세션만 생성
+                DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+                switch (dayOfWeek) {
+                    case MONDAY -> {
+                        // 운영체제: 월 10:30 - 11:45
+                        classSessionRepository.save(new ClassSession(
+                                null,
+                                os,
+                                today,
+                                LocalTime.of(10, 30),
+                                LocalTime.of(11, 45)
+                        ));
+                        // 컴퓨터구조: 월 13:30 - 14:45
+                        classSessionRepository.save(new ClassSession(
+                                null,
+                                arch,
+                                today,
+                                LocalTime.of(13, 30),
+                                LocalTime.of(14, 45)
+                        ));
+                    }
+                    case WEDNESDAY -> {
+                        // 운영체제: 수 09:00 - 10:15
+                        classSessionRepository.save(new ClassSession(
+                                null,
+                                os,
+                                today,
+                                LocalTime.of(9, 0),
+                                LocalTime.of(10, 15)
+                        ));
+                    }
+                    case THURSDAY -> {
+                        // 컴퓨터구조: 목 12:00 - 13:15
+                        classSessionRepository.save(new ClassSession(
+                                null,
+                                arch,
+                                today,
+                                LocalTime.of(12, 0),
+                                LocalTime.of(13, 15)
+                        ));
+                    }
+                    case FRIDAY -> {
+                        // 클라우드컴퓨팅: 금 10:00 - 11:45
+                        classSessionRepository.save(new ClassSession(
+                                null,
+                                cloud,
+                                today,
+                                LocalTime.of(10, 0),
+                                LocalTime.of(11, 45)
+                        ));
+                    }
+                    default -> {
+                        // 화/토/일 등에는 오늘 수업 없음
+                        System.out.println("[DataInitializer] 오늘은 등록된 수업이 없는 요일입니다: " + dayOfWeek);
+                    }
+                }
+            }
+
+            System.out.println("[DataInitializer] 초기 과목, Takes, ClassSession 데이터가 준비되었습니다.");
         };
     }
 }
