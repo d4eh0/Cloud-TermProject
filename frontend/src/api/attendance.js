@@ -118,40 +118,37 @@ export const getSessionByToken = async (token) => {
 /**
  * 출석 체크 요청
  * @param {object} attendanceData - 출석 데이터
- * @param {number} attendanceData.lectureId - 수업 ID
+ * @param {number} attendanceData.lectureId - 수업 ID (ClassSession.id)
  * @param {number} attendanceData.latitude - 위도
  * @param {number} attendanceData.longitude - 경도
  * @param {string} attendanceData.deviceId - 기기 ID
  * @param {string} attendanceData.captchaToken - CAPTCHA 토큰
- * @returns {Promise<{success: boolean, attendance?: object, message?: string}>}
+ * @returns {Promise<{success: boolean, data?: object, message?: string}>}
  */
 export const requestAttendance = async (attendanceData) => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/attendance/check`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    //   body: JSON.stringify(attendanceData),
-    // })
-    // return await response.json()
+    const response = await fetch(`${API_BASE_URL}/attendance/check`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // 쿠키 전송
+      body: JSON.stringify(attendanceData),
+    })
 
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    const data = await response.json()
+
+    if (!data.success) {
+      return {
+        success: false,
+        message: data.message || '출석 체크에 실패했습니다.',
+      }
+    }
+
+    // 백엔드 응답 형식: { success: true, data: AttendanceCheckResponse }
     return {
       success: true,
-      attendance: {
-        id: Date.now(),
-        lectureId: attendanceData.lectureId,
-        status: '출석',
-        attendanceTime: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-        location: {
-          latitude: attendanceData.latitude,
-          longitude: attendanceData.longitude,
-        },
-      },
+      data: data.data, // AttendanceCheckResponse 객체
     }
   } catch (error) {
     console.error('Request attendance error:', error)
