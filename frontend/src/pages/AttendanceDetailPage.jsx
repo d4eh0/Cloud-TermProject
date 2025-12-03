@@ -99,34 +99,29 @@ function AttendanceDetailPage() {
   }
 
   const getStatusStyle = (status) => {
-    if (!status) return { backgroundColor: 'transparent', color: 'rgb(107, 114, 128)' }
+    if (!status) return { color: 'rgb(107, 114, 128)' }
     
     switch (status) {
       case '출석':
         return {
-          backgroundColor: 'rgb(0, 170, 202)', // YU Sky Blue
-          color: 'white',
+          color: 'rgb(56, 189, 248)', // 더 밝은 Sky Blue
         }
       case '지각':
         return {
-          backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-          color: 'rgb(21, 57, 116)', // YU Blue
+          color: 'rgb(157, 157, 156)', // YU Gray (회색)
         }
       case '결석':
         return {
-          backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-          color: 'rgb(21, 57, 116)', // YU Blue
+          color: 'rgb(157, 157, 156)', // YU Gray (회색)
         }
       case '중간고사':
       case '기말고사':
         return {
-          backgroundColor: 'rgb(234, 227, 210)', // YU Beige
-          color: 'rgb(21, 57, 116)', // YU Blue
+          color: 'rgb(0, 170, 202)', // YU Sky Blue (현재 출석색)
         }
       default:
         return {
-          backgroundColor: 'rgb(157, 157, 156)', // YU Gray
-          color: 'white',
+          color: 'rgb(157, 157, 156)', // YU Gray
         }
     }
   }
@@ -196,19 +191,19 @@ function AttendanceDetailPage() {
                       {row.map((record) => (
                         <div
                           key={record.session}
-                          className="flex flex-col items-center gap-1.5 py-2 border-r border-gray-300 last:border-r-0"
+                          className="flex flex-col items-center border-r border-gray-300 last:border-r-0"
                         >
-                          <div className="text-xs text-gray-700 font-medium">
+                          <div className="text-xs text-gray-700 font-medium py-1.5 border-b border-gray-200 w-full text-center">
                             {record.date}
                           </div>
-                          {record.status && (
-                            <div
-                              className="w-full py-1.5 px-1 rounded-lg text-xs font-semibold text-center"
-                              style={getStatusStyle(record.status)}
-                            >
-                              {record.status}
-                            </div>
-                          )}
+                            {record.status && (
+                              <div
+                                className="w-full py-1.5 px-1 text-xs font-semibold text-center"
+                                style={getStatusStyle(record.status)}
+                              >
+                                {record.status}
+                              </div>
+                            )}
                           {!record.status && (
                             <div className="w-full py-1.5 px-1" />
                           )}
