@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { logout } from '../../api/auth'
 
 function BottomNavigation() {
   const navigate = useNavigate()
@@ -8,6 +9,17 @@ function BottomNavigation() {
   const activeColor = 'rgb(21, 57, 116)' // YU Blue
   const inactiveColor = 'rgb(107, 114, 128)' // gray-600
 
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // 에러가 발생해도 로그인 페이지로 이동
+      navigate('/login')
+    }
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
       <div className="max-w-md mx-auto px-4 py-2">
@@ -15,7 +27,7 @@ function BottomNavigation() {
 
           {/* 로그아웃 */}
           <button
-            onClick={() => navigate('/login')}
+            onClick={handleLogout}
             className="flex flex-col items-center gap-1 py-2"
           >
             <svg
