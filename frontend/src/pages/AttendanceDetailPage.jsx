@@ -32,27 +32,19 @@ function AttendanceDetailPage() {
   }, [courseId])
 
   const recordsWithSession = useMemo(() => {
-    // 항상 1~15차시까지 슬롯을 고정으로 만들고,
-    // detail.records가 있으면 앞에서부터 순서대로 매핑
-    const result = []
+    // 백엔드에서 보내준 records를 그대로 사용 (이미 주차/차시 라벨 포함)
     const records = detail?.records || []
-
-    for (let i = 0; i < 15; i++) {
-      const record = records[i]
-      result.push({
-        session: i + 1,
-        date: record?.date || '',
-        status: record?.status || null,
-      })
-    }
-
-    return result
+    return records.map((record, index) => ({
+      session: index + 1,
+      sessionLabel: record.sessionLabel || `${index + 1}`,
+      date: record.date || '',
+      status: record.status || null,
+    }))
   }, [detail])
 
-  // 세션 번호를 주차/차시로 변환
-  const getSessionLabel = (session) => {
-    // 요구사항: course_session은 항상 1~15가 보이도록 표시
-    return `${session}`
+  // 세션 라벨 표시 (백엔드에서 보내준 sessionLabel 사용)
+  const getSessionLabel = (record) => {
+    return record.sessionLabel || `${record.session}`
   }
 
   // 5개씩 그룹화
@@ -151,7 +143,7 @@ function AttendanceDetailPage() {
                           key={record.session}
                           className="text-center text-xs font-semibold text-gray-600 py-2 border-r border-gray-300 last:border-r-0 bg-gray-50"
                         >
-                          {getSessionLabel(record.session)}
+                          {getSessionLabel(record)}
                         </div>
                       ))}
                       {/* 빈 공간 채우기 */}

@@ -85,30 +85,24 @@ export const getAttendanceDetail = async (courseId) => {
 /**
  * 토큰으로 출석 세션 정보 조회
  * @param {string} token - 출석 토큰
- * @returns {Promise<object>}
+ * @returns {Promise<object|null>}
  */
 export const getSessionByToken = async (token) => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/attendance/session?token=${token}`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    // })
-    // return await response.json()
+    const response = await fetch(`${API_BASE_URL}/attendance/session?token=${token}`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 전송
+    })
 
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    const lectureId = token.split('-').pop()
-    return {
-      id: lectureId,
-      courseName: '데이터베이스',
-      date: '2025-12-02(화)',
-      time: '11:00 ~ 12:15',
-      location: 'IT관(E21-114)',
-      remainingTime: 15, // 남은 출석 가능 시간 (분)
+    const data = await response.json()
+
+    if (!data.success) {
+      console.error('Get session by token failed:', data.message)
+      return null
     }
+
+    // 백엔드 응답 형식: { success: true, data: AttendanceSessionDto }
+    return data.data || null
   } catch (error) {
     console.error('Get session by token error:', error)
     return null
