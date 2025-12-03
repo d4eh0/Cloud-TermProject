@@ -10,7 +10,13 @@ function RefreshButton({ onClick, isRefreshing = false, disabled = false }) {
       <button
         onClick={onClick}
         disabled={disabled || isRefreshing}
-        className="px-6 py-2 rounded-xl border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`px-6 py-2 rounded-xl border-2 transition-all duration-200 ${
+          isRefreshing 
+            ? 'opacity-75 cursor-wait' 
+            : disabled 
+              ? 'opacity-50 cursor-not-allowed' 
+              : 'hover:bg-blue-50 active:scale-95'
+        }`}
         style={{
           borderColor: 'rgb(0, 170, 202)',
           color: 'rgb(0, 170, 202)',
@@ -18,7 +24,7 @@ function RefreshButton({ onClick, isRefreshing = false, disabled = false }) {
       >
         <div className="flex items-center gap-2">
           <svg
-            className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+            className={`w-4 h-4 transition-transform ${isRefreshing ? 'animate-spin' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

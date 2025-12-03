@@ -93,7 +93,7 @@ function AttendancePage() {
         if (prev === '..') return '...'
         return '.'
       })
-    }, 500)
+    }, 300)
 
     return () => clearInterval(interval)
   }, [isCheckingIn])
@@ -105,7 +105,10 @@ function AttendancePage() {
     
     setIsRefreshing(true)
     try {
-      const sessionData = await getSessionByToken(token)
+      const [sessionData] = await Promise.all([
+        getSessionByToken(token),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ])
       if (sessionData) {
         setAvailableLecture({
           id: sessionData.id,

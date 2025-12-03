@@ -59,7 +59,10 @@ function AttendanceHistoryPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      const courses = await getAttendanceHistory()
+      const [courses] = await Promise.all([
+        getAttendanceHistory(),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ])
       setMyCourses(courses)
     } catch (error) {
       console.error('Failed to refresh courses:', error)

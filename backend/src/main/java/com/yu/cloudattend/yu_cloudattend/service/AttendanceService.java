@@ -179,36 +179,74 @@ public class AttendanceService {
 
         // 4) AttendanceLog -> AttendanceRecordDto로 변환 (주차/차시 계산)
         List<AttendanceRecordDto> records = new java.util.ArrayList<>();
-
+        
+        // 같은 날짜의 중복 세션 제거 (같은 날짜, 같은 학생, 같은 과목의 세션은 하나만 유지)
+        java.util.Map<LocalDate, AttendanceLog> uniqueLogsByDate = new java.util.HashMap<>();
         for (AttendanceLog log : logs) {
             LocalDate sessionDate = log.getClassSession().getSessionDate();
+            // 같은 날짜의 세션이 이미 있으면, 더 최근에 생성된 것으로 유지 (또는 그냥 첫 번째 것 유지)
+            uniqueLogsByDate.putIfAbsent(sessionDate, log);
+        }
+        
+        // 주차별로 그룹화하기 위한 Map (주차 -> 해당 주차의 세션 목록)
+        java.util.Map<Integer, java.util.List<AttendanceLog>> weekMap = new java.util.HashMap<>();
 
-            // 주차 계산: 기준 날짜로부터 몇 주차인지 (월요일 기준)
+        // 먼저 주차별로 그룹화
+        for (AttendanceLog log : uniqueLogsByDate.values()) {
+            LocalDate sessionDate = log.getClassSession().getSessionDate();
+            
+            // 주차 계산: 기준 날짜(월요일)로부터 해당 날짜가 속한 주의 월요일까지의 주차
+            // 예: 2025-09-01(월) = 1주차, 2025-09-08(월) = 2주차
             long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(baseDate, sessionDate);
-            int week = (int) (daysBetween / 7) + 1; // 1주차부터 시작
-
-            int sessionInWeek;
-            if (!isTwoSessionsPerWeek) {
-                // 주 1회 과목(클라우드컴퓨팅)은 항상 1차시
-                sessionInWeek = 1;
+            // 주차 계산: 음수일 경우 0주차로 처리
+            int week = (int) (daysBetween / 7);
+            if (daysBetween < 0) {
+                week = 0; // 기준일 이전은 0주차
             } else {
-                // 주 2회 과목: 요일 기준으로 1차시/2차시 결정
-                // 운영체제(1102): 월(1) = 1차시, 수(3) = 2차시
-                // 컴퓨터구조(1103): 화(2) = 1차시, 목(4) = 2차시
-                java.time.DayOfWeek dayOfWeek = sessionDate.getDayOfWeek();
-                if ("1102".equals(course.getCourseCode())) {
-                    sessionInWeek = (dayOfWeek == java.time.DayOfWeek.MONDAY) ? 1 : 2;
-                } else {
-                    // 1103 (컴퓨터구조)
-                    sessionInWeek = (dayOfWeek == java.time.DayOfWeek.TUESDAY) ? 1 : 2;
-                }
+                week = week + 1; // 1주차부터 시작
             }
+            
+            weekMap.computeIfAbsent(week, k -> new java.util.ArrayList<>()).add(log);
+        }
 
-            String date = sessionDate.format(dateFormatter);
-            String status = convertStatusToKorean(log.getStatus());
-            String label = week + "-" + sessionInWeek + "차시";
+        // 주차별로 정렬하여 처리
+        List<Integer> sortedWeeks = new java.util.ArrayList<>(weekMap.keySet());
+        java.util.Collections.sort(sortedWeeks);
 
-            records.add(new AttendanceRecordDto(label, date, status));
+        for (Integer week : sortedWeeks) {
+            List<AttendanceLog> weekLogs = weekMap.get(week);
+            
+            // 같은 주차 내에서 날짜 순으로 정렬
+            weekLogs.sort((a, b) -> a.getClassSession().getSessionDate()
+                    .compareTo(b.getClassSession().getSessionDate()));
+
+            for (AttendanceLog log : weekLogs) {
+                LocalDate sessionDate = log.getClassSession().getSessionDate();
+
+                int sessionInWeek;
+                if (!isTwoSessionsPerWeek) {
+                    // 주 1회 과목(클라우드컴퓨팅)은 항상 1차시
+                    sessionInWeek = 1;
+                } else {
+                    // 주 2회 과목: 요일 기준으로 1차시/2차시 결정
+                    // 운영체제(1102): 월(1) = 1차시, 수(3) = 2차시
+                    // 컴퓨터구조(1103): 화(2) = 1차시, 목(4) = 2차시
+                    java.time.DayOfWeek dayOfWeek = sessionDate.getDayOfWeek();
+                    if ("1102".equals(course.getCourseCode())) {
+                        // 운영체제: 월요일이면 1차시, 수요일이면 2차시
+                        sessionInWeek = (dayOfWeek == java.time.DayOfWeek.MONDAY) ? 1 : 2;
+                    } else {
+                        // 컴퓨터구조: 화요일이면 1차시, 목요일이면 2차시
+                        sessionInWeek = (dayOfWeek == java.time.DayOfWeek.TUESDAY) ? 1 : 2;
+                    }
+                }
+
+                String date = sessionDate.format(dateFormatter);
+                String status = convertStatusToKorean(log.getStatus());
+                String label = week + "-" + sessionInWeek + "차시";
+
+                records.add(new AttendanceRecordDto(label, date, status));
+            }
         }
 
         // 5) 최종 DTO 구성

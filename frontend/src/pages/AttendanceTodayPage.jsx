@@ -61,7 +61,11 @@ function AttendanceTodayPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      const lectures = await getTodayLectures()
+      
+      const [lectures] = await Promise.all([
+        getTodayLectures(),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ])
       // 상태를 강제로 업데이트하기 위해 새로운 배열로 설정
       setTodayLectures([...lectures])
     } catch (error) {
