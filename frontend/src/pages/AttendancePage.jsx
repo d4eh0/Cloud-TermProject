@@ -4,6 +4,7 @@ import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import PolicyModal from '../components/attendance/PolicyModal'
 import { getCurrentUser } from '../api/auth'
+import { getSessionByToken } from '../api/attendance'
 
 function AttendancePage() {
   const navigate = useNavigate()
@@ -15,9 +16,44 @@ function AttendancePage() {
   const [loadingDots, setLoadingDots] = useState('.')
   const [studentInfo, setStudentInfo] = useState(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [isLoadingSession, setIsLoadingSession] = useState(false)
   
   // URL 쿼리 파라미터에서 token 읽기
   const token = searchParams.get('token')
+  
+  // token이 있으면 세션 정보 조회
+  useEffect(() => {
+    const fetchSession = async () => {
+      if (!token) {
+        return
+      }
+      
+      setIsLoadingSession(true)
+      try {
+        const sessionData = await getSessionByToken(token)
+        if (sessionData) {
+          // 백엔드 응답 형식에 맞게 변환
+          setAvailableLecture({
+            id: sessionData.id,
+            courseName: sessionData.courseName,
+            date: sessionData.date,
+            time: sessionData.time,
+            location: sessionData.location,
+          })
+        } else {
+          // 세션 정보를 찾을 수 없음
+          setAvailableLecture(null)
+        }
+      } catch (error) {
+        console.error('Failed to fetch session:', error)
+        setAvailableLecture(null)
+      } finally {
+        setIsLoadingSession(false)
+      }
+    }
+    
+    fetchSession()
+  }, [token])
 
   // 사용자 정보 가져오기
   useEffect(() => {
