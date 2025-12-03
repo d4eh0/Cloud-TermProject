@@ -23,7 +23,7 @@ function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 600))
 
       // 로그인 성공 시 학생 메인으로 이동
-      navigate('/student/home')
+      navigate('/attendance/today')
     } catch (err) {
       setError('로그인에 실패했습니다. 다시 시도해주세요.')
     } finally {
