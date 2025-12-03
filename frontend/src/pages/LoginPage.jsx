@@ -143,7 +143,7 @@ function LoginPage() {
           {/* 하단 안내 영역 */}
           <div className="mt-6 text-center text-[11px] text-gray-400 leading-relaxed">
             <p className="font-semibold text-xs text-gray-500">
-              Yeungnam University 출석 시스템 (Mock)
+              YU-CloudAttend
             </p>
             <p className="mt-1">
               실제 서비스로 구현된다면, 학교 통합 로그인과 연동되어
