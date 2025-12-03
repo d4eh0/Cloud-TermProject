@@ -150,7 +150,7 @@ function AttendanceTodayPage() {
             <div className="flex justify-center mb-6">
               <button
                 onClick={handleRefresh}
-                disabled={isRefreshing || isLoadingLectures}
+                disabled={isRefreshing}
                 className="px-6 py-2 rounded-xl border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   borderColor: 'rgb(0, 170, 202)',
@@ -159,7 +159,7 @@ function AttendanceTodayPage() {
               >
                 <div className="flex items-center gap-2">
                   <svg
-                    className={`w-4 h-4 ${isRefreshing || isLoadingLectures ? 'animate-spin' : ''}`}
+                    className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -172,7 +172,7 @@ function AttendanceTodayPage() {
                     />
                   </svg>
                   <span className="text-sm font-medium">
-                    {isRefreshing || isLoadingLectures ? '조회 중...' : '재조회'}
+                    {isRefreshing ? '조회 중...' : '재조회'}
                   </span>
                 </div>
               </button>
@@ -205,7 +205,7 @@ function AttendanceTodayPage() {
                   {lecture.courseName}
                 </h2>
                     <button
-                      onClick={() => navigate(`/attendance/history/detail/${lecture.id}`)}
+                      onClick={() => navigate(`/attendance/history/detail/${lecture.courseId || lecture.id}`)}
                       className="text-xs text-gray-400 underline hover:text-gray-600 transition-colors"
                     >
                       출결현황

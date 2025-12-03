@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TodayLectureDto {
     private Long id;                 // ClassSession ID
+    private Long courseId;           // Course ID (출석 상세 조회용)
     private String courseName;
     private String date;             // 표시용 날짜 문자열 (예: 2025-12-02)
     private String time;             // "HH:mm ~ HH:mm"

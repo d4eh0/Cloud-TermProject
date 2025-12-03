@@ -126,6 +126,7 @@ public class AttendanceService {
 
                     return new TodayLectureDto(
                             session.getId(),
+                            session.getCourse().getId(),  // courseId 추가
                             session.getCourse().getCourseName(),
                             date,
                             time,
