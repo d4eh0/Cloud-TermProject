@@ -70,45 +70,44 @@ function AttendanceTodayPage() {
     navigate(`/attendance?token=mock-token-${lecture.id}`)
   }
 
-  const getAttendanceButtonStyle = (status) => {
-    switch (status) {
+  // 출석 상태에 따른 버튼 스타일과 텍스트 반환
+  const getAttendanceButtonInfo = (lecture) => {
+    const { attendanceStatus, attendanceTime } = lecture
+    
+    switch (attendanceStatus) {
       case '출석':
         return {
-          backgroundColor: 'rgb(0, 170, 202)', // YU Sky Blue (로그인 버튼과 동일)
-          color: 'white',
+          style: {
+            backgroundColor: 'rgb(0, 170, 202)', // YU Sky Blue
+            color: 'white',
+          },
+          text: attendanceTime ? `출석(${attendanceTime})` : '출석',
         }
       case '지각':
         return {
-          backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-          color: 'rgb(21, 57, 116)', // YU Blue
+          style: {
+            backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
+            color: 'rgb(21, 57, 116)', // YU Blue
+          },
+          text: attendanceTime ? `지각(${attendanceTime})` : '지각',
         }
       case '결석':
         return {
-          backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-          color: 'rgb(21, 57, 116)', // YU Blue
+          style: {
+            backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
+            color: 'rgb(21, 57, 116)', // YU Blue
+          },
+          text: '결석',
         }
       default: // 미확인
         return {
-          backgroundColor: 'rgb(157, 157, 156)', // YU Gray (회색)
-          color: 'white',
+          style: {
+            backgroundColor: 'rgb(157, 157, 156)', // YU Gray
+            color: 'white',
+          },
+          text: '미확인',
         }
     }
-  }
-
-  const getAttendanceButtonText = (lecture) => {
-    if (lecture.attendanceStatus === '출석' && lecture.attendanceTime) {
-      return `출석(${lecture.attendanceTime})`
-    }
-    if (lecture.attendanceStatus === '지각' && lecture.attendanceTime) {
-      return `지각(${lecture.attendanceTime})`
-    }
-    if (lecture.attendanceStatus === '결석') {
-      return '결석'
-    }
-    if (lecture.attendanceStatus === '미확인') {
-      return '미확인'
-    }
-    return ''
   }
 
   return (
@@ -162,85 +161,89 @@ function AttendanceTodayPage() {
                 scrollbarColor: 'rgb(157, 157, 156) rgb(243, 244, 246)',
               }}
             >
-            {todayLectures.map((lecture) => (
-              <div
-                key={lecture.id}
-                className="bg-white rounded-2xl shadow border border-gray-200 p-5"
-              >
-                {/* 과목명 */}
-                <h2 className="text-lg font-bold text-gray-900 mb-4">
-                  {lecture.courseName}
-                </h2>
-
-                {/* 과목 정보 */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <span>{lecture.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>{lecture.time}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    <span>{lecture.location}</span>
-                  </div>
-                </div>
-
-                {/* 출석 상태 버튼 */}
-                <button
-                  onClick={() => handleAttendanceClick(lecture)}
-                  disabled={lecture.attendanceStatus === '미확인'}
-                  className="w-full rounded-2xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:cursor-default"
-                  style={getAttendanceButtonStyle(lecture.attendanceStatus)}
+            {todayLectures.map((lecture) => {
+              const { style, text } = getAttendanceButtonInfo(lecture)
+              
+              return (
+                <div
+                  key={lecture.id}
+                  className="bg-white rounded-2xl shadow border border-gray-200 p-5"
                 >
-                  <span>{getAttendanceButtonText(lecture)}</span>
-                </button>
-              </div>
-            ))}
+                  {/* 과목명 */}
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">
+                    {lecture.courseName}
+                  </h2>
+
+                  {/* 과목 정보 */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span>{lecture.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span>{lecture.time}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <span>{lecture.location}</span>
+                    </div>
+                  </div>
+
+                  {/* 출석 상태 버튼 */}
+                  <button
+                    onClick={() => handleAttendanceClick(lecture)}
+                    disabled={lecture.attendanceStatus === '미확인'}
+                    className="w-full rounded-2xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:cursor-default"
+                    style={style}
+                  >
+                    <span>{text}</span>
+                  </button>
+                </div>
+              )
+            })}
             </div>
           </div>
         </div>
@@ -253,3 +256,4 @@ function AttendanceTodayPage() {
 }
 
 export default AttendanceTodayPage
+
