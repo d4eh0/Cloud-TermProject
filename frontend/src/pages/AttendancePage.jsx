@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import PolicyModal from '../components/attendance/PolicyModal'
@@ -7,6 +7,7 @@ import { getCurrentUser } from '../api/auth'
 
 function AttendancePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [availableLecture, setAvailableLecture] = useState(null)
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
@@ -14,6 +15,9 @@ function AttendancePage() {
   const [loadingDots, setLoadingDots] = useState('.')
   const [studentInfo, setStudentInfo] = useState(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
+  
+  // URL 쿼리 파라미터에서 token 읽기
+  const token = searchParams.get('token')
 
   // 사용자 정보 가져오기
   useEffect(() => {
