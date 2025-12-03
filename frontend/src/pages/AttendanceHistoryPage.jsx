@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import { getCurrentUser } from '../api/auth'
+import { getAttendanceHistory } from '../api/attendance'
 
 function AttendanceHistoryPage() {
   const navigate = useNavigate()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [studentInfo, setStudentInfo] = useState(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [myCourses, setMyCourses] = useState([])
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true)
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -36,45 +39,32 @@ function AttendanceHistoryPage() {
     fetchUser()
   }, [navigate])
 
-  // Mock 내가 듣는 과목 목록
-  const myCourses = [
-    {
-      id: 1,
-      courseName: '데이터베이스',
-      courseCode: 1101,
-    },
-    {
-      id: 2,
-      courseName: '운영체제',
-      courseCode: 1102,
-    },
-    {
-      id: 3,
-      courseName: '컴퓨터구조',
-      courseCode: 1103,
-    },
-    {
-      id: 4,
-      courseName: '클라우드컴퓨팅',
-      courseCode: 1104,
-    },
-    {
-      id: 5,
-      courseName: '소프트웨어공학',
-      courseCode: 1105,
-    },
-    {
-      id: 6,
-      courseName: '웹프로그래밍',
-      courseCode: 1106,
-    },
-  ]
+  // 수강 과목 목록 가져오기
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const courses = await getAttendanceHistory()
+        setMyCourses(courses)
+      } catch (error) {
+        console.error('Failed to fetch courses:', error)
+      } finally {
+        setIsLoadingCourses(false)
+      }
+    }
+
+    fetchCourses()
+  }, [])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    // TODO: 실제 API 호출로 출석 현황 갱신
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    setIsRefreshing(false)
+    try {
+      const courses = await getAttendanceHistory()
+      setMyCourses(courses)
+    } catch (error) {
+      console.error('Failed to refresh courses:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const handleCourseClick = (course) => {
@@ -83,7 +73,7 @@ function AttendanceHistoryPage() {
   }
 
   // 로딩 중이면 로딩 표시
-  if (isLoadingUser) {
+  if (isLoadingUser || isLoadingCourses) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-gray-600">로딩 중...</div>
@@ -147,23 +137,29 @@ function AttendanceHistoryPage() {
                 scrollbarColor: 'rgb(157, 157, 156) rgb(243, 244, 246)',
               }}
             >
-            {myCourses.map((course) => (
-              <button
-                key={course.id}
-                onClick={() => handleCourseClick(course)}
-                className="w-full bg-white rounded-2xl shadow border border-gray-200 p-5 text-left hover:shadow-md transition-shadow"
-              >
-                {/* 과목명 및 과목코드 */}
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-bold text-gray-900">
-                    {course.courseName}
-                  </h2>
-                  <span className="text-xs text-gray-500">
-                    ({course.courseCode})
-                  </span>
+              {myCourses.length === 0 ? (
+                <div className="w-full py-8 text-center text-sm text-gray-500">
+                  수강 중인 과목이 없습니다.
                 </div>
-              </button>
-            ))}
+              ) : (
+                myCourses.map((course) => (
+                  <button
+                    key={course.id}
+                    onClick={() => handleCourseClick(course)}
+                    className="w-full bg-white rounded-2xl shadow border border-gray-200 p-5 text-left hover:shadow-md transition-shadow"
+                  >
+                    {/* 과목명 및 과목코드 */}
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-base font-bold text-gray-900">
+                        {course.courseName}
+                      </h2>
+                      <span className="text-xs text-gray-500">
+                        ({course.courseCode})
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
