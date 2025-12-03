@@ -1,6 +1,7 @@
 package com.yu.cloudattend.yu_cloudattend.repository;
 
 import com.yu.cloudattend.yu_cloudattend.entity.AttendanceLog;
+import com.yu.cloudattend.yu_cloudattend.entity.ClassSession;
 import com.yu.cloudattend.yu_cloudattend.entity.Course;
 import com.yu.cloudattend.yu_cloudattend.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,9 @@ public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Lo
             Student student,
             Course course
     );
+
+    // 특정 학생 + 특정 세션에 대한 출석 로그 조회
+    List<AttendanceLog> findByStudentAndClassSession(Student student, ClassSession classSession);
 }
 
 

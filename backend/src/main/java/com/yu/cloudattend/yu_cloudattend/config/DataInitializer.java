@@ -15,7 +15,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -78,95 +77,89 @@ public class DataInitializer {
                 }
             }
 
-            // 4) 오늘 날짜 기준 ClassSession 생성 (이미 있으면 추가하지 않음)
-            LocalDate today = LocalDate.now();
-            List<ClassSession> existingSessions =
-                    classSessionRepository.findByCourseInAndSessionDate(courses, today);
-
-            if (existingSessions.isEmpty()) {
-                // 오늘 요일에 따라 해당 요일의 수업 세션만 생성
-                DayOfWeek dayOfWeek = today.getDayOfWeek();
-
-                switch (dayOfWeek) {
-                    case MONDAY -> {
-                        // 운영체제: 월 10:30 - 11:45
-                        classSessionRepository.save(new ClassSession(
-                                null,
-                                os,
-                                today,
-                                LocalTime.of(10, 30),
-                                LocalTime.of(11, 45)
-                        ));
-                        // 컴퓨터구조: 월 13:30 - 14:45
-                        classSessionRepository.save(new ClassSession(
-                                null,
-                                arch,
-                                today,
-                                LocalTime.of(13, 30),
-                                LocalTime.of(14, 45)
-                        ));
-                    }
-                    case WEDNESDAY -> {
-                        // 운영체제: 수 09:00 - 10:15
-                        classSessionRepository.save(new ClassSession(
-                                null,
-                                os,
-                                today,
-                                LocalTime.of(9, 0),
-                                LocalTime.of(10, 15)
-                        ));
-                    }
-                    case THURSDAY -> {
-                        // 컴퓨터구조: 목 12:00 - 13:15
-                        classSessionRepository.save(new ClassSession(
-                                null,
-                                arch,
-                                today,
-                                LocalTime.of(12, 0),
-                                LocalTime.of(13, 15)
-                        ));
-                    }
-                    case FRIDAY -> {
-                        // 클라우드컴퓨팅: 금 10:00 - 11:45
-                        classSessionRepository.save(new ClassSession(
-                                null,
-                                cloud,
-                                today,
-                                LocalTime.of(10, 0),
-                                LocalTime.of(11, 45)
-                        ));
-                    }
-                    default -> {
-                        // 화/토/일 등에는 오늘 수업 없음
-                        System.out.println("[DataInitializer] 오늘은 등록된 수업이 없는 요일입니다: " + dayOfWeek);
-                    }
+            // 4) 각 과목마다 15주차 분량의 ClassSession 생성 (이미 있으면 추가하지 않음)
+            // 기준 날짜: 2025년 9월 첫 주 월요일 (2025-09-01)
+            LocalDate baseDate = LocalDate.of(2025, 9, 1); // 2025-09-01 (월요일)
+            
+            // 각 과목별로 15주차 분량의 세션 생성
+            // 운영체제: 월요일 10:30-11:45 (15주차)
+            for (int week = 0; week < 15; week++) {
+                LocalDate sessionDate = baseDate.plusWeeks(week);
+                // 해당 날짜에 이미 세션이 있는지 확인
+                List<ClassSession> existing = classSessionRepository.findByCourseInAndSessionDate(
+                        List.of(os), sessionDate);
+                if (existing.isEmpty()) {
+                    ClassSession session = new ClassSession(
+                            null,
+                            os,
+                            sessionDate,
+                            LocalTime.of(10, 30),
+                            LocalTime.of(11, 45)
+                    );
+                    classSessionRepository.save(session);
                 }
             }
 
-            // 5) 예시 출석 로그 생성 (이미 있으면 추가하지 않음)
-            List<AttendanceLog> existingLogs =
-                    attendanceLogRepository.findByStudentAndClassSession_CourseOrderByClassSession_SessionDateAsc(
-                            student,
-                            os
-                    );
-
-            if (existingLogs.isEmpty()) {
-                // 오늘 생성된 세션들 다시 조회
-                List<ClassSession> todaySessions =
-                        classSessionRepository.findByCourseInAndSessionDate(courses, today);
-
-                for (ClassSession session : todaySessions) {
-                    // 단순하게 모두 "출석" 처리
-                    AttendanceLog log = new AttendanceLog(
+            // 컴퓨터구조: 월요일 13:30-14:45 (15주차)
+            for (int week = 0; week < 15; week++) {
+                LocalDate sessionDate = baseDate.plusWeeks(week);
+                List<ClassSession> existing = classSessionRepository.findByCourseInAndSessionDate(
+                        List.of(arch), sessionDate);
+                if (existing.isEmpty()) {
+                    ClassSession session = new ClassSession(
                             null,
-                            student,
-                            session,
-                            AttendanceLog.AttendanceStatus.PRESENT,
-                            LocalDateTime.of(today, session.getStartTime().plusMinutes(5)),
-                            null,
-                            null
+                            arch,
+                            sessionDate,
+                            LocalTime.of(13, 30),
+                            LocalTime.of(14, 45)
                     );
-                    attendanceLogRepository.save(log);
+                    classSessionRepository.save(session);
+                }
+            }
+
+            // 클라우드컴퓨팅: 금요일 10:00-11:45 (15주차)
+            // 첫 주 금요일 찾기 (2025-09-01이 월요일이므로 금요일은 2025-09-05)
+            LocalDate fridayBaseDate = baseDate.plusDays(4); // 2025-09-05 (금요일)
+            for (int week = 0; week < 15; week++) {
+                LocalDate sessionDate = fridayBaseDate.plusWeeks(week);
+                List<ClassSession> existing = classSessionRepository.findByCourseInAndSessionDate(
+                        List.of(cloud), sessionDate);
+                if (existing.isEmpty()) {
+                    ClassSession session = new ClassSession(
+                            null,
+                            cloud,
+                            sessionDate,
+                            LocalTime.of(10, 0),
+                            LocalTime.of(11, 45)
+                    );
+                    classSessionRepository.save(session);
+                }
+            }
+
+            // 5) 각 과목의 모든 세션에 대해 출석 로그 생성 (이미 있으면 추가하지 않음)
+            for (Course course : courses) {
+                List<ClassSession> courseSessions = classSessionRepository
+                        .findByCourseInAndSessionDateBetweenOrderBySessionDateAsc(
+                                List.of(course), baseDate, baseDate.plusWeeks(20)); // 넉넉하게 범위 설정
+                
+                for (ClassSession session : courseSessions) {
+                    // 해당 학생의 해당 세션에 대한 출석 로그가 이미 있는지 확인
+                    List<AttendanceLog> existingLogs = attendanceLogRepository
+                            .findByStudentAndClassSession(student, session);
+                    
+                    if (existingLogs.isEmpty()) {
+                        // 모두 "출석" 처리 (일부는 지각/결석으로 바꿀 수도 있음)
+                        AttendanceLog log = new AttendanceLog(
+                                null,
+                                student,
+                                session,
+                                AttendanceLog.AttendanceStatus.PRESENT,
+                                LocalDateTime.of(session.getSessionDate(), session.getStartTime().plusMinutes(5)),
+                                null,
+                                null
+                        );
+                        attendanceLogRepository.save(log);
+                    }
                 }
             }
 
