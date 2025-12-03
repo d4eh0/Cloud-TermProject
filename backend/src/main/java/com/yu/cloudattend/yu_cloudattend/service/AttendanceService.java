@@ -2,6 +2,7 @@ package com.yu.cloudattend.yu_cloudattend.service;
 
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceDetailDto;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceRecordDto;
+import com.yu.cloudattend.yu_cloudattend.dto.AttendanceSessionDto;
 import com.yu.cloudattend.yu_cloudattend.dto.CourseDto;
 import com.yu.cloudattend.yu_cloudattend.dto.TodayLectureDto;
 import com.yu.cloudattend.yu_cloudattend.entity.AttendanceLog;
@@ -182,6 +183,54 @@ public class AttendanceService {
             case LATE -> "지각";
             case ABSENT -> "결석";
         };
+    }
+
+    /**
+     * 출석 토큰으로 수업 세션 정보를 조회합니다.
+     * 1차 버전: 토큰은 단순히 "mock-token-{sessionId}" 또는 "{sessionId}" 형식으로 가정합니다.
+     */
+    public AttendanceSessionDto getSessionByToken(String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+
+        // "mock-token-123" 형식이면 마지막 부분만 사용, 아니면 전체를 ID로 가정
+        String[] parts = token.split("-");
+        String idPart = parts[parts.length - 1];
+
+        Long sessionId;
+        try {
+            sessionId = Long.parseLong(idPart);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+
+        Optional<ClassSession> sessionOpt = classSessionRepository.findById(sessionId);
+        if (sessionOpt.isEmpty()) {
+            return null;
+        }
+
+        ClassSession session = sessionOpt.get();
+        Course course = session.getCourse();
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        String date = session.getSessionDate().format(dateFormatter);
+        String time = session.getStartTime().format(timeFormatter)
+                + " ~ " + session.getEndTime().format(timeFormatter);
+
+        // 1차 버전: 남은 출석 가능 시간은 일단 15분으로 고정
+        int remainingMinutes = 15;
+
+        return new AttendanceSessionDto(
+                session.getId(),
+                course.getCourseName(),
+                date,
+                time,
+                course.getLocation(),
+                remainingMinutes
+        );
     }
 }
 
