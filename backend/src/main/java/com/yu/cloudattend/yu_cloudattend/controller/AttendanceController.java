@@ -1,6 +1,7 @@
 package com.yu.cloudattend.yu_cloudattend.controller;
 
 import com.yu.cloudattend.yu_cloudattend.dto.CourseDto;
+import com.yu.cloudattend.yu_cloudattend.dto.TodayLectureDto;
 import com.yu.cloudattend.yu_cloudattend.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,31 @@ public class AttendanceController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("data", courses);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 오늘 날짜 기준, 현재 로그인한 학생의 수업 목록 조회
+     */
+    @GetMapping("/today")
+    public ResponseEntity<Map<String, Object>> getTodayLectures() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "인증되지 않은 사용자입니다.");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        List<TodayLectureDto> lectures = attendanceService.getTodayLectures(userId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", lectures);
 
         return ResponseEntity.ok(response);
     }

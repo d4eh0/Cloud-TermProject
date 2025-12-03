@@ -37,10 +37,6 @@ public class ClassSession {
     // 종료 시간 (예: 12:15)
     @Column(nullable = false)
     private LocalTime endTime;
-
-    // 강의실 (기본은 Course.location 복사, 필요시 변경 가능)
-    @Column(nullable = false, length = 100)
-    private String location;
 }
 
 
