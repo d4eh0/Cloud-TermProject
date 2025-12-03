@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import PolicyModal from '../components/attendance/PolicyModal'
+import { getCurrentUser } from '../api/auth'
 
 function AttendancePage() {
   const navigate = useNavigate()
@@ -11,13 +12,34 @@ function AttendancePage() {
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
   const [isCheckingIn, setIsCheckingIn] = useState(false)
   const [loadingDots, setLoadingDots] = useState('.')
+  const [studentInfo, setStudentInfo] = useState(null)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
 
-  // Mock 학생 정보
-  const studentInfo = {
-    name: '박대형',
-    department: '컴퓨터공학과',
-    studentId: '22213482',
-  }
+  // 사용자 정보 가져오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const result = await getCurrentUser()
+        if (result.success && result.user) {
+          setStudentInfo({
+            name: result.user.name,
+            department: result.user.department,
+            studentId: result.user.studentId,
+          })
+        } else {
+          // 인증 실패 시 로그인 페이지로
+          navigate('/login')
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error)
+        navigate('/login')
+      } finally {
+        setIsLoadingUser(false)
+      }
+    }
+    
+    fetchUser()
+  }, [navigate])
 
   // Mock 오늘의 수업 목록 (전체)
   // 현재 시간 기준으로 출석 가능한 과목이 표시되도록 시간 설정
@@ -206,6 +228,20 @@ function AttendancePage() {
         Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
+  }
+
+  // 로딩 중이면 로딩 표시
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-gray-600">로딩 중...</div>
+      </div>
+    )
+  }
+
+  // 사용자 정보가 없으면 아무것도 표시하지 않음 (이미 navigate됨)
+  if (!studentInfo) {
+    return null
   }
 
   return (
