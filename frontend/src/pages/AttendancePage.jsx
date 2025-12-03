@@ -81,89 +81,6 @@ function AttendancePage() {
     fetchUser()
   }, [navigate])
 
-  // Mock 오늘의 수업 목록 (전체)
-  // 현재 시간 기준으로 출석 가능한 과목이 표시되도록 시간 설정
-  const getTodayLectures = () => {
-    const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinutes = now.getMinutes()
-    const currentTimeMinutes = currentHour * 60 + currentMinutes
-
-    // 현재 시간 기준으로 출석 가능한 시간대 생성
-    // 예: 현재가 11시 30분이면 11:00 ~ 12:15 수업이 출석 가능
-    const startHour = currentHour
-    const startMin = Math.max(0, currentMinutes - 5) // 5분 전부터
-    const endHour = startHour + 1
-    const endMin = Math.min(59, currentMinutes + 30) // 1시간 30분 후까지
-
-    const startTime = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`
-
-    return [
-      {
-        id: 1,
-        courseName: '데이터베이스',
-        date: '2025-12-02(화)',
-        time: `${startTime} ~ ${endTime}`,
-        location: 'IT관(E21-114)',
-      },
-      {
-        id: 2,
-        courseName: '운영체제',
-        date: '2025-12-02(화)',
-        time: '13:00 ~ 14:15',
-        location: 'IT관(E21-114)',
-      },
-      {
-        id: 3,
-        courseName: '컴퓨터구조',
-        date: '2025-12-02(화)',
-        time: '13:00 ~ 14:15',
-        location: 'IT관(E21-114)',
-      },
-      {
-        id: 4,
-        courseName: '클라우드컴퓨팅',
-        date: '2025-12-02(화)',
-        time: '15:00 ~ 16:15',
-        location: 'IT관(E21-114)',
-      },
-    ]
-  }
-
-  const allTodayLectures = getTodayLectures()
-
-  // 시간 문자열을 분 단위로 변환 (예: "11:00" -> 660)
-  const parseTimeToMinutes = (timeStr) => {
-    const [hours, minutes] = timeStr.split(':').map(Number)
-    return hours * 60 + minutes
-  }
-
-  // 현재 시간대에 출석 가능한 과목 찾기
-  const findAvailableLecture = () => {
-    const now = new Date()
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
-
-    // 출석 가능 시간: 수업 시작 10분 전 ~ 수업 종료 후 10분
-    const availableLecture = allTodayLectures.find((lecture) => {
-      const [startTime, endTime] = lecture.time.split(' ~ ')
-      const startMinutes = parseTimeToMinutes(startTime)
-      const endMinutes = parseTimeToMinutes(endTime)
-
-      // 출석 가능 시간 범위
-      const checkInStart = startMinutes - 10
-      const checkInEnd = endMinutes + 10
-
-      return currentMinutes >= checkInStart && currentMinutes <= checkInEnd
-    })
-
-    setAvailableLecture(availableLecture || null)
-  }
-
-  // 컴포넌트 마운트 시 및 재조회 시 출석 가능한 과목 찾기
-  useEffect(() => {
-    findAvailableLecture()
-  }, [])
 
   // 로딩 점 애니메이션
   useEffect(() => {
@@ -181,11 +98,29 @@ function AttendancePage() {
   }, [isCheckingIn])
 
   const handleRefresh = async () => {
+    if (!token) {
+      return
+    }
+    
     setIsRefreshing(true)
-    // TODO: 실제 API 호출로 출석 현황 갱신
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    findAvailableLecture() // 재조회 시 다시 찾기
-    setIsRefreshing(false)
+    try {
+      const sessionData = await getSessionByToken(token)
+      if (sessionData) {
+        setAvailableLecture({
+          id: sessionData.id,
+          courseName: sessionData.courseName,
+          date: sessionData.date,
+          time: sessionData.time,
+          location: sessionData.location,
+        })
+      } else {
+        setAvailableLecture(null)
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const handleCheckIn = async (lecture) => {

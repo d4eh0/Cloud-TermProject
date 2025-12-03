@@ -104,12 +104,25 @@ public class AttendanceService {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        // ClassSession -> TodayLectureDto 매핑
+        // ClassSession -> TodayLectureDto 매핑 (출석 로그 조회 포함)
         return sessions.stream()
                 .map(session -> {
                     String date = session.getSessionDate().format(dateFormatter);
                     String time = session.getStartTime().format(timeFormatter)
                             + " ~ " + session.getEndTime().format(timeFormatter);
+
+                    // 해당 학생의 해당 세션에 대한 출석 로그 조회
+                    Optional<AttendanceLog> logOpt = attendanceLogRepository
+                            .findFirstByStudentAndClassSession(student, session);
+
+                    String attendanceStatus = "미확인";
+                    String attendanceTime = null;
+
+                    if (logOpt.isPresent()) {
+                        AttendanceLog log = logOpt.get();
+                        attendanceStatus = convertStatusToKorean(log.getStatus());
+                        attendanceTime = log.getAttendanceTime().format(timeFormatter);
+                    }
 
                     return new TodayLectureDto(
                             session.getId(),
@@ -117,8 +130,8 @@ public class AttendanceService {
                             date,
                             time,
                             session.getCourse().getLocation(),
-                            "미확인",   // 1차 버전: 항상 미확인
-                            null        // 아직 출석시간 없음
+                            attendanceStatus,
+                            attendanceTime
                     );
                 })
                 .collect(Collectors.toList());
