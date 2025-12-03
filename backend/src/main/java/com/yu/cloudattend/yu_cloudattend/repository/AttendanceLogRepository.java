@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Long> {
@@ -20,6 +21,9 @@ public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, Lo
 
     // 특정 학생 + 특정 세션에 대한 출석 로그 조회
     List<AttendanceLog> findByStudentAndClassSession(Student student, ClassSession classSession);
+
+    // 특정 학생 + 특정 세션에 대한 출석 로그 단일 조회 (중복 체크용)
+    Optional<AttendanceLog> findFirstByStudentAndClassSession(Student student, ClassSession classSession);
 }
 
 
