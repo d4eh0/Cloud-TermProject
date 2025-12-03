@@ -4,7 +4,7 @@ import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import PolicyModal from '../components/attendance/PolicyModal'
 import { getCurrentUser } from '../api/auth'
-import { getSessionByToken } from '../api/attendance'
+import { getSessionByToken, requestAttendance } from '../api/attendance'
 
 function AttendancePage() {
   const navigate = useNavigate()
@@ -231,8 +231,22 @@ function AttendancePage() {
         return
       }
 
-      // TODO: 실제 출석 체크 API 호출 (위치 정보 포함)
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // 실제 출석 체크 API 호출
+      const attendanceData = {
+        lectureId: lecture.id,
+        latitude: latitude,
+        longitude: longitude,
+        deviceId: navigator.userAgent, // 간단히 User-Agent를 deviceId로 사용
+        captchaToken: '', // 향후 CAPTCHA 구현 시 사용
+      }
+      
+      const result = await requestAttendance(attendanceData)
+      
+      if (!result.success) {
+        setIsCheckingIn(false)
+        alert(result.message || '출석 체크에 실패했습니다.')
+        return
+      }
       
       // 성공 시 오늘의 출결현황으로 이동
       navigate('/attendance/today')
