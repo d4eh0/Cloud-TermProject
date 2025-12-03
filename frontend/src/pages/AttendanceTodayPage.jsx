@@ -86,23 +86,23 @@ function AttendanceTodayPage() {
       case '지각':
         return {
           style: {
-            backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-            color: 'rgb(21, 57, 116)', // YU Blue
+            backgroundColor: 'rgb(180, 180, 180)', // 회색 배경
+            color: 'white',
           },
           text: attendanceTime ? `지각(${attendanceTime})` : '지각',
         }
       case '결석':
         return {
           style: {
-            backgroundColor: 'rgb(255, 248, 220)', // 연한 노란색
-            color: 'rgb(21, 57, 116)', // YU Blue
+            backgroundColor: 'rgb(180, 180, 180)', // 회색 배경
+            color: 'white',
           },
           text: '결석',
         }
       default: // 미확인
         return {
           style: {
-            backgroundColor: 'rgb(157, 157, 156)', // YU Gray
+            backgroundColor: 'rgb(210, 210, 210)', // 연한 회색 배경 (지각/결석보다 연함)
             color: 'white',
           },
           text: '미확인',
@@ -167,12 +167,20 @@ function AttendanceTodayPage() {
               return (
                 <div
                   key={lecture.id}
-                  className="bg-white rounded-2xl shadow border border-gray-200 p-5"
+                  className="bg-white rounded-2xl shadow border border-gray-200 p-5 relative"
                 >
-                  {/* 과목명 */}
-                  <h2 className="text-lg font-bold text-gray-900 mb-4">
-                    {lecture.courseName}
-                  </h2>
+                  {/* 과목명 및 상세보기 링크 */}
+                  <div className="flex items-start justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900">
+                      {lecture.courseName}
+                    </h2>
+                    <button
+                      onClick={() => navigate(`/attendance/history/detail/${lecture.id}`)}
+                      className="text-xs text-gray-400 underline hover:text-gray-600 transition-colors"
+                    >
+                      출결현황
+                    </button>
+                  </div>
 
                   {/* 과목 정보 */}
                   <div className="space-y-2 mb-4">
