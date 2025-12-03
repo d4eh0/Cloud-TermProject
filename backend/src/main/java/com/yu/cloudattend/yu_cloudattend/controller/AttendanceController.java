@@ -1,5 +1,7 @@
 package com.yu.cloudattend.yu_cloudattend.controller;
 
+import com.yu.cloudattend.yu_cloudattend.dto.AttendanceCheckRequest;
+import com.yu.cloudattend.yu_cloudattend.dto.AttendanceCheckResponse;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceDetailDto;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceSessionDto;
 import com.yu.cloudattend.yu_cloudattend.dto.CourseDto;
@@ -11,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -136,6 +140,39 @@ public class AttendanceController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("data", sessionDto);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 출석 체크 요청 처리
+     * POST /api/attendance/check
+     */
+    @PostMapping("/check")
+    public ResponseEntity<Map<String, Object>> checkAttendance(@RequestBody AttendanceCheckRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "인증되지 않은 사용자입니다.");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        Long userId = (Long) authentication.getPrincipal();
+
+        AttendanceCheckResponse checkResponse = attendanceService.checkAttendance(userId, request);
+
+        if (checkResponse == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "출석 체크에 실패했습니다. 수업 정보를 확인해주세요.");
+            return ResponseEntity.status(400).body(response);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", checkResponse);
 
         return ResponseEntity.ok(response);
     }
