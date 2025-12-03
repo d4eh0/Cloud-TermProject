@@ -1,5 +1,7 @@
 package com.yu.cloudattend.yu_cloudattend.service;
 
+import com.yu.cloudattend.yu_cloudattend.dto.AttendanceCheckRequest;
+import com.yu.cloudattend.yu_cloudattend.dto.AttendanceCheckResponse;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceDetailDto;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceRecordDto;
 import com.yu.cloudattend.yu_cloudattend.dto.AttendanceSessionDto;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -230,6 +233,74 @@ public class AttendanceService {
                 time,
                 course.getLocation(),
                 remainingMinutes
+        );
+    }
+
+    /**
+     * 출석 체크 비즈니스 로직.
+     * 1차 버전: 시간/위치/기기 검증 없이 무조건 "출석"으로 기록하거나 업데이트.
+     */
+    public AttendanceCheckResponse checkAttendance(Long studentId, AttendanceCheckRequest request) {
+        // 1) 학생 검증
+        Optional<Student> studentOpt = studentRepository.findById(studentId);
+        if (studentOpt.isEmpty()) {
+            return null;
+        }
+        Student student = studentOpt.get();
+
+        // 2) 수업 세션 검증
+        if (request == null || request.getLectureId() == null) {
+            return null;
+        }
+
+        Optional<ClassSession> sessionOpt = classSessionRepository.findById(request.getLectureId());
+        if (sessionOpt.isEmpty()) {
+            return null;
+        }
+        ClassSession session = sessionOpt.get();
+
+        // 3) 기존 출석 로그 여부 확인 (학생 + 세션)
+        Optional<AttendanceLog> existingLogOpt =
+                attendanceLogRepository.findFirstByStudentAndClassSession(student, session);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        AttendanceLog log;
+        if (existingLogOpt.isPresent()) {
+            // 이미 출석 기록이 있으면 출석 시간/위치만 업데이트 (상태는 그대로 두거나 PRESENT로 덮어씀)
+            log = existingLogOpt.get();
+            log.setAttendanceTime(now);
+            log.setLatitude(request.getLatitude());
+            log.setLongitude(request.getLongitude());
+            log.setStatus(AttendanceLog.AttendanceStatus.PRESENT);
+        } else {
+            // 새 출석 로그 생성
+            log = new AttendanceLog(
+                    null,
+                    student,
+                    session,
+                    AttendanceLog.AttendanceStatus.PRESENT,
+                    now,
+                    request.getLatitude(),
+                    request.getLongitude()
+            );
+        }
+
+        AttendanceLog saved = attendanceLogRepository.save(log);
+
+        // 4) 응답 DTO로 변환
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        String attendanceTimeStr = saved.getAttendanceTime().format(timeFormatter);
+
+        AttendanceCheckResponse.LocationInfo locationInfo =
+                new AttendanceCheckResponse.LocationInfo(saved.getLatitude(), saved.getLongitude());
+
+        return new AttendanceCheckResponse(
+                saved.getId(),
+                session.getId(),
+                convertStatusToKorean(saved.getStatus()),
+                attendanceTimeStr,
+                locationInfo
         );
     }
 }
