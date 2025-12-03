@@ -10,55 +10,19 @@ const API_BASE_URL = 'http://localhost:8080/api'
  */
 export const getTodayLectures = async () => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/attendance/today`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    // })
-    // return await response.json()
+    const response = await fetch(`${API_BASE_URL}/attendance/today`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 전송
+    })
 
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    return [
-      {
-        id: 1,
-        courseName: '데이터베이스',
-        date: '2025-12-02(화)',
-        time: '11:00 ~ 12:15',
-        location: 'IT관(E21-114)',
-        attendanceStatus: '미확인',
-        attendanceTime: null,
-      },
-      {
-        id: 2,
-        courseName: '운영체제',
-        date: '2025-12-02(화)',
-        time: '13:00 ~ 14:15',
-        location: 'IT관(E21-114)',
-        attendanceStatus: '지각',
-        attendanceTime: '13:05',
-      },
-      {
-        id: 3,
-        courseName: '컴퓨터구조',
-        date: '2025-12-02(화)',
-        time: '13:00 ~ 14:15',
-        location: 'IT관(E21-114)',
-        attendanceStatus: '결석',
-        attendanceTime: null,
-      },
-      {
-        id: 4,
-        courseName: '클라우드컴퓨팅',
-        date: '2025-12-02(화)',
-        time: '15:00 ~ 16:15',
-        location: 'IT관(E21-114)',
-        attendanceStatus: '출석',
-        attendanceTime: '14:56',
-      },
-    ]
+    const data = await response.json()
+
+    if (!data.success) {
+      console.error('Get today lectures failed:', data.message)
+      return []
+    }
+
+    return data.data || []
   } catch (error) {
     console.error('Get today lectures error:', error)
     return []

@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
 import { getCurrentUser } from '../api/auth'
+import { getTodayLectures } from '../api/attendance'
 
 function AttendanceTodayPage() {
   const navigate = useNavigate()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [studentInfo, setStudentInfo] = useState(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [todayLectures, setTodayLectures] = useState([])
+  const [isLoadingLectures, setIsLoadingLectures] = useState(true)
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -36,51 +39,32 @@ function AttendanceTodayPage() {
     fetchUser()
   }, [navigate])
 
-  // Mock 오늘의 수업 목록
-  const todayLectures = [
-    {
-      id: 1,
-      courseName: '데이터베이스',
-      date: '2025-12-02(화)',
-      time: '11:00 ~ 12:15',
-      location: 'IT관(E21-114)',
-      attendanceStatus: '미확인',
-      attendanceTime: null,
-    },
-    {
-      id: 2,
-      courseName: '운영체제',
-      date: '2025-12-02(화)',
-      time: '13:00 ~ 14:15',
-      location: 'IT관(E21-114)',
-      attendanceStatus: '지각',
-      attendanceTime: '13:05',
-    },
-    {
-      id: 3,
-      courseName: '컴퓨터구조',
-      date: '2025-12-02(화)',
-      time: '13:00 ~ 14:15',
-      location: 'IT관(E21-114)',
-      attendanceStatus: '결석',
-      attendanceTime: null,
-    },
-    {
-      id: 4,
-      courseName: '클라우드컴퓨팅',
-      date: '2025-12-02(화)',
-      time: '15:00 ~ 16:15',
-      location: 'IT관(E21-114)',
-      attendanceStatus: '출석',
-      attendanceTime: '14:56',
-    },
-  ]
+  // 오늘의 수업 목록 가져오기
+  useEffect(() => {
+    const fetchLectures = async () => {
+      try {
+        const lectures = await getTodayLectures()
+        setTodayLectures(lectures)
+      } catch (error) {
+        console.error('Failed to fetch today lectures:', error)
+      } finally {
+        setIsLoadingLectures(false)
+      }
+    }
+
+    fetchLectures()
+  }, [])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    // TODO: 실제 API 호출로 출석 현황 갱신
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    setIsRefreshing(false)
+    try {
+      const lectures = await getTodayLectures()
+      setTodayLectures(lectures)
+    } catch (error) {
+      console.error('Failed to refresh today lectures:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const handleAttendanceClick = (lecture) => {
@@ -133,7 +117,7 @@ function AttendanceTodayPage() {
   }
 
   // 로딩 중이면 로딩 표시
-  if (isLoadingUser) {
+  if (isLoadingUser || isLoadingLectures) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="text-gray-600">로딩 중...</div>
