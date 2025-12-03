@@ -9,6 +9,8 @@ function AttendancePage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [availableLecture, setAvailableLecture] = useState(null)
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
+  const [isCheckingIn, setIsCheckingIn] = useState(false)
+  const [loadingDots, setLoadingDots] = useState('.')
 
   // Mock 학생 정보
   const studentInfo = {
@@ -101,6 +103,21 @@ function AttendancePage() {
     findAvailableLecture()
   }, [])
 
+  // 로딩 점 애니메이션
+  useEffect(() => {
+    if (!isCheckingIn) return
+
+    const interval = setInterval(() => {
+      setLoadingDots((prev) => {
+        if (prev === '.') return '..'
+        if (prev === '..') return '...'
+        return '.'
+      })
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [isCheckingIn])
+
   const handleRefresh = async () => {
     setIsRefreshing(true)
     // TODO: 실제 API 호출로 출석 현황 갱신
@@ -110,9 +127,85 @@ function AttendancePage() {
   }
 
   const handleCheckIn = async (lecture) => {
-    // TODO: 출석 체크 로직 (로딩 모달 띄우고 성공 시 /attendance/today로 이동)
-    console.log('출석 체크:', lecture)
-    navigate(`/attendance?token=mock-token-${lecture.id}`)
+    setIsCheckingIn(true)
+    setLoadingDots('.')
+    
+    try {
+      // 브라우저 GPS 권한 요청 및 위치 가져오기
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('GPS를 지원하지 않는 브라우저입니다.'))
+          return
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve(position),
+          (error) => reject(error),
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        )
+      })
+
+      // GPS 위치 정보
+      const { latitude, longitude } = position.coords
+      
+      // 위치 검증 로직 (수업 장소와의 거리 확인)
+      // IT관 위치: 35.830620, 128.754680
+      const lectureLocation = {
+        lat: 35.830620,
+        lng: 128.754680,
+      }
+      
+      // 거리 계산 (Haversine formula)
+      const distance = calculateDistance(latitude, longitude, lectureLocation.lat, lectureLocation.lng)
+      const maxDistance = 100 // 100m 이내여야 출석 인정
+      
+      if (distance > maxDistance) {
+        setIsCheckingIn(false)
+        alert(`수업 장소에서 너무 멀리 떨어져 있습니다. (${Math.round(distance)}m)`)
+        return
+      }
+
+      // TODO: 실제 출석 체크 API 호출 (위치 정보 포함)
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      
+      // 성공 시 오늘의 출결현황으로 이동
+      navigate('/attendance/today')
+    } catch (error) {
+      setIsCheckingIn(false)
+      console.error('출석 체크 실패:', error)
+      
+      if (error.code === 1) {
+        // PERMISSION_DENIED
+        alert('GPS 권한이 거부되었습니다. 출석을 진행하려면 GPS 권한을 허용해주세요.')
+      } else if (error.code === 2) {
+        // POSITION_UNAVAILABLE
+        alert('위치 정보를 가져올 수 없습니다. GPS가 켜져있는지 확인해주세요.')
+      } else if (error.code === 3) {
+        // TIMEOUT
+        alert('위치 정보 요청 시간이 초과되었습니다. 다시 시도해주세요.')
+      } else {
+        alert('출석 체크 중 오류가 발생했습니다. 다시 시도해주세요.')
+      }
+    }
+  }
+
+  // 두 좌표 간 거리 계산 (미터 단위)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371000 // 지구 반지름 (미터)
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
   }
 
   return (
@@ -274,6 +367,28 @@ function AttendancePage() {
         isOpen={isPolicyModalOpen}
         onClose={() => setIsPolicyModalOpen(false)}
       />
+
+      {/* 출석 중 로딩 모달 */}
+      {isCheckingIn && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.15)',
+          }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full mx-4 p-8">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              {/* 메시지 */}
+              <p className="text-lg font-semibold text-gray-900">
+                출석 중입니다{loadingDots}
+              </p>
+              <p className="text-sm text-gray-600 text-center">
+                잠시만 기다려주세요...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
