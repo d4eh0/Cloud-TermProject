@@ -102,5 +102,24 @@ public class AuthController {
         
         return ResponseEntity.ok(response);
     }
+    
+    /**
+     * 로그아웃 API
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response) {
+        // 쿠키 삭제 (Max-Age=0 설정)
+        Cookie cookie = new Cookie(COOKIE_NAME, null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // 로컬 개발 시 false, 프로덕션에서는 true
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // 즉시 삭제
+        response.addCookie(cookie);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        
+        return ResponseEntity.ok(result);
+    }
 }
 
