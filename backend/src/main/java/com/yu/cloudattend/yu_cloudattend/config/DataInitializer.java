@@ -1,9 +1,11 @@
 package com.yu.cloudattend.yu_cloudattend.config;
 
+import com.yu.cloudattend.yu_cloudattend.entity.AttendanceLog;
 import com.yu.cloudattend.yu_cloudattend.entity.ClassSession;
 import com.yu.cloudattend.yu_cloudattend.entity.Course;
 import com.yu.cloudattend.yu_cloudattend.entity.Student;
 import com.yu.cloudattend.yu_cloudattend.entity.Takes;
+import com.yu.cloudattend.yu_cloudattend.repository.AttendanceLogRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.ClassSessionRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.CourseRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.StudentRepository;
@@ -15,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +32,7 @@ public class DataInitializer {
     private final CourseRepository courseRepository;
     private final TakesRepository takesRepository;
     private final ClassSessionRepository classSessionRepository;
+    private final AttendanceLogRepository attendanceLogRepository;
 
     @Bean
     public ApplicationRunner initData() {
@@ -139,7 +143,34 @@ public class DataInitializer {
                 }
             }
 
-            System.out.println("[DataInitializer] 초기 과목, Takes, ClassSession 데이터가 준비되었습니다.");
+            // 5) 예시 출석 로그 생성 (이미 있으면 추가하지 않음)
+            List<AttendanceLog> existingLogs =
+                    attendanceLogRepository.findByStudentAndClassSession_CourseOrderByClassSession_SessionDateAsc(
+                            student,
+                            os
+                    );
+
+            if (existingLogs.isEmpty()) {
+                // 오늘 생성된 세션들 다시 조회
+                List<ClassSession> todaySessions =
+                        classSessionRepository.findByCourseInAndSessionDate(courses, today);
+
+                for (ClassSession session : todaySessions) {
+                    // 단순하게 모두 "출석" 처리
+                    AttendanceLog log = new AttendanceLog(
+                            null,
+                            student,
+                            session,
+                            AttendanceLog.AttendanceStatus.PRESENT,
+                            LocalDateTime.of(today, session.getStartTime().plusMinutes(5)),
+                            null,
+                            null
+                    );
+                    attendanceLogRepository.save(log);
+                }
+            }
+
+            System.out.println("[DataInitializer] 초기 과목, Takes, ClassSession, AttendanceLog 데이터가 준비되었습니다.");
         };
     }
 }
