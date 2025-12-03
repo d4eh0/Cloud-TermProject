@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
 import StudentProfile from '../components/common/StudentProfile'
+import PolicyModal from '../components/attendance/PolicyModal'
 
 function AttendancePage() {
   const navigate = useNavigate()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [availableLecture, setAvailableLecture] = useState(null)
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
 
   // Mock 학생 정보
   const studentInfo = {
@@ -119,9 +121,20 @@ function AttendancePage() {
       <main className="flex-1 flex justify-center px-4 py-6 pb-24">
         <div className="w-full max-w-md">
           {/* 메인 카드 */}
-          <div className="bg-white rounded-3xl shadow-md px-6 py-8">
-            {/* 페이지 제목 */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">출석체크</h1>
+          <div className="bg-white rounded-3xl shadow-md px-6 py-8 relative">
+            {/* 페이지 제목 및 ? 버튼 */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">출석체크</h1>
+              <button
+                onClick={() => setIsPolicyModalOpen(true)}
+                className="w-6 h-6 rounded-full border flex items-center justify-center transition-colors hover:bg-gray-50"
+                style={{
+                  borderColor: 'rgb(157, 157, 156)', // YU Gray
+                }}
+              >
+                <span className="text-gray-600 font-semibold text-xs">?</span>
+              </button>
+            </div>
 
             {/* 학생 정보 섹션 */}
             <StudentProfile studentInfo={studentInfo} />
@@ -255,6 +268,12 @@ function AttendancePage() {
 
       {/* 하단 네비게이션 바 */}
       <BottomNavigation />
+
+      {/* 출석 정책 안내 모달 */}
+      <PolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={() => setIsPolicyModalOpen(false)}
+      />
     </div>
   )
 }
