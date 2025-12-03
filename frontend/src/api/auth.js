@@ -1,48 +1,28 @@
 /**
  * 인증 관련 API 함수
- * TODO: 실제 Spring Boot 백엔드 API 연동
  */
 
-const API_BASE_URL = '/api' // TODO: 실제 API 베이스 URL로 변경
+const API_BASE_URL = 'http://localhost:8080/api'
 
 /**
  * 로그인
  * @param {string} studentId - 학번
  * @param {string} password - 비밀번호
- * @returns {Promise<{success: boolean, user?: object, token?: string, message?: string}>}
+ * @returns {Promise<{success: boolean, user?: object, message?: string}>}
  */
 export const login = async (studentId, password) => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ studentId, password }),
-    // })
-    // return await response.json()
-
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // 쿠키 전송을 위해 필수
+      body: JSON.stringify({ studentId, password }),
+    })
     
-    if (studentId && password) {
-      return {
-        success: true,
-        user: {
-          id: 1,
-          studentId: studentId,
-          name: '박대형',
-          department: '컴퓨터공학과',
-        },
-        token: 'mock-token-' + Date.now(),
-      }
-    } else {
-      return {
-        success: false,
-        message: '학번과 비밀번호를 입력해주세요.',
-      }
-    }
+    const data = await response.json()
+    return data
   } catch (error) {
     console.error('Login error:', error)
     return {
@@ -58,18 +38,11 @@ export const login = async (studentId, password) => {
  */
 export const logout = async () => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    // })
-    // return await response.json()
-
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    return { success: true }
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include', // 쿠키 전송을 위해 필수
+    })
+    return await response.json()
   } catch (error) {
     console.error('Logout error:', error)
     return { success: false }
@@ -82,26 +55,11 @@ export const logout = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/auth/me`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    // })
-    // return await response.json()
-
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    return {
-      success: true,
-      user: {
-        id: 1,
-        studentId: '22213482',
-        name: '박대형',
-        department: '컴퓨터공학과',
-      },
-    }
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 전송을 위해 필수
+    })
+    return await response.json()
   } catch (error) {
     console.error('Get current user error:', error)
     return {

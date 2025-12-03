@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { login } from '../api/auth'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -19,12 +20,16 @@ function LoginPage() {
 
     setIsLoading(true)
     try {
-      // TODO: 실제 Spring Boot 로그인 API 연동
-      await new Promise((resolve) => setTimeout(resolve, 600))
-
-      // 로그인 성공 시 출석체크 페이지로 이동
-      navigate('/attendance')
+      const result = await login(studentId, password)
+      
+      if (result.success) {
+        // 로그인 성공 시 출석체크 페이지로 이동
+        navigate('/attendance')
+      } else {
+        setError(result.message || '로그인에 실패했습니다.')
+      }
     } catch (err) {
+      console.error('Login error:', err)
       setError('로그인에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setIsLoading(false)
