@@ -2,6 +2,8 @@ package com.yu.cloudattend.yu_cloudattend.controller;
 
 import com.yu.cloudattend.yu_cloudattend.dto.LoginRequest;
 import com.yu.cloudattend.yu_cloudattend.dto.LoginResponse;
+import com.yu.cloudattend.yu_cloudattend.dto.UserDto;
+import com.yu.cloudattend.yu_cloudattend.security.JwtAuthenticationFilter;
 import com.yu.cloudattend.yu_cloudattend.service.AuthService;
 import com.yu.cloudattend.yu_cloudattend.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -10,7 +12,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -60,6 +67,40 @@ public class AuthController {
         }
         
         return ResponseEntity.ok(loginResponse);
+    }
+    
+    /**
+     * 현재 로그인한 사용자 정보 조회 API
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "인증되지 않은 사용자입니다.");
+            return ResponseEntity.status(401).body(response);
+        }
+        
+        // SecurityContext에서 사용자 ID 추출
+        Long userId = (Long) authentication.getPrincipal();
+        
+        // 사용자 정보 조회
+        UserDto userDto = authService.getUserById(userId);
+        
+        if (userDto == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "사용자 정보를 찾을 수 없습니다.");
+            return ResponseEntity.status(404).body(response);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("user", userDto);
+        
+        return ResponseEntity.ok(response);
     }
 }
 
