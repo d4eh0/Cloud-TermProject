@@ -1,102 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNavigation from '../components/common/BottomNavigation'
+import { getAttendanceDetail } from '../api/attendance'
 
 function AttendanceDetailPage() {
   const navigate = useNavigate()
-  const { id } = useParams()
+  const { id: courseId } = useParams()
 
-  // Mock 과목 정보 (id 기반으로 결정)
-  const courseMap = {
-    1: { courseName: '데이터베이스', courseCode: 1101, isWeekly: true }, // 주당 1번
-    2: { courseName: '운영체제', courseCode: 1102, isWeekly: false }, // 주당 2번
-    3: { courseName: '컴퓨터구조', courseCode: 1103, isWeekly: false }, // 주당 2번
-    4: { courseName: '클라우드컴퓨팅', courseCode: 1104, isWeekly: true }, // 주당 1번
-    5: { courseName: '소프트웨어공학', courseCode: 1105, isWeekly: false }, // 주당 2번
-    6: { courseName: '웹프로그래밍', courseCode: 1106, isWeekly: false }, // 주당 2번
-  }
+  const [detail, setDetail] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
 
-  const courseInfo = courseMap[id] || courseMap[1]
-  const isWeekly = courseInfo.isWeekly
-
-  // Mock 출석 기록 생성
-  const generateAttendanceRecords = () => {
-    if (isWeekly) {
-      // 주당 1번 (15주차)
-      return [
-        { session: 1, date: '09-03', status: '출석' },
-        { session: 2, date: '09-10', status: '출석' },
-        { session: 3, date: '09-17', status: '출석' },
-        { session: 4, date: '09-24', status: '출석' },
-        { session: 5, date: '10-01', status: '출석' },
-        { session: 6, date: '10-15', status: '출석' },
-        { session: 7, date: '10-22', status: '중간고사' },
-        { session: 8, date: '10-29', status: '결석' },
-        { session: 9, date: '11-05', status: '출석' },
-        { session: 10, date: '11-12', status: '출석' },
-        { session: 11, date: '11-19', status: '출석' },
-        { session: 12, date: '11-26', status: '출석' },
-        { session: 13, date: '12-03', status: null },
-        { session: 14, date: '12-11', status: null },
-        { session: 15, date: '12-17', status: '기말고사' },
-      ]
-    } else {
-      // 주당 2번 (30주차)
-      return [
-        { session: 1, date: '09-01', status: '출석' },
-        { session: 2, date: '09-04', status: '출석' },
-        { session: 3, date: '09-08', status: '출석' },
-        { session: 4, date: '09-11', status: '출석' },
-        { session: 5, date: '09-15', status: '출석' },
-        { session: 6, date: '09-18', status: '출석' },
-        { session: 7, date: '09-22', status: '출석' },
-        { session: 8, date: '09-25', status: '출석' },
-        { session: 9, date: '09-29', status: '출석' },
-        { session: 10, date: '10-02', status: '출석' },
-        { session: 11, date: '10-13', status: '출석' },
-        { session: 12, date: '10-16', status: '출석' },
-        { session: 13, date: '10-20', status: '중간고사' },
-        { session: 14, date: '10-23', status: '중간고사' },
-        { session: 15, date: '10-27', status: '출석' },
-        { session: 16, date: '10-30', status: '출석' },
-        { session: 17, date: '11-03', status: '출석' },
-        { session: 18, date: '11-06', status: '출석' },
-        { session: 19, date: '11-10', status: '출석' },
-        { session: 20, date: '11-13', status: '출석' },
-        { session: 21, date: '11-17', status: '출석' },
-        { session: 22, date: '11-20', status: '출석' },
-        { session: 23, date: '11-24', status: '출석' },
-        { session: 24, date: '11-27', status: '결석' },
-        { session: 25, date: '12-01', status: '출석' },
-        { session: 26, date: '12-04', status: null },
-        { session: 27, date: '12-09', status: null },
-        { session: 28, date: '12-12', status: null },
-        { session: 29, date: '12-15', status: '기말고사' },
-        { session: 30, date: '12-18', status: '기말고사' },
-      ]
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const result = await getAttendanceDetail(courseId)
+        if (!result) {
+          setIsError(true)
+        } else {
+          setDetail(result)
+        }
+      } catch (e) {
+        console.error('Failed to fetch attendance detail:', e)
+        setIsError(true)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }
 
-  const attendanceRecords = generateAttendanceRecords()
+    fetchDetail()
+  }, [courseId])
+
+  const recordsWithSession = useMemo(() => {
+    if (!detail?.records) return []
+    return detail.records.map((record, index) => ({
+      session: index + 1,
+      date: record.date,
+      status: record.status,
+    }))
+  }, [detail])
 
   // 세션 번호를 주차/차시로 변환
   const getSessionLabel = (session) => {
-    if (isWeekly) {
-      // 주당 1번: session 1 = 1-1차시, session 2 = 2-1차시
-      return `${session}-1차시`
-    } else {
-      // 주당 2번: session 1 = 1-1차시, session 2 = 1-2차시, session 3 = 2-1차시
-      const week = Math.ceil(session / 2)
-      const sessionInWeek = ((session - 1) % 2) + 1
-      return `${week}-${sessionInWeek}차시`
-    }
+    // 일단 단순하게 1-1차시, 2-1차시 ... 형태로만 표시
+    return `${session}-1차시`
   }
 
   // 5개씩 그룹화
-  const groupedRecords = []
-  for (let i = 0; i < attendanceRecords.length; i += 5) {
-    groupedRecords.push(attendanceRecords.slice(i, i + 5))
-  }
+  const groupedRecords = useMemo(() => {
+    const result = []
+    for (let i = 0; i < recordsWithSession.length; i += 5) {
+      result.push(recordsWithSession.slice(i, i + 5))
+    }
+    return result
+  }, [recordsWithSession])
 
   const getStatusStyle = (status) => {
     if (!status) return { color: 'rgb(107, 114, 128)' }
@@ -156,12 +113,22 @@ function AttendanceDetailPage() {
               <h1 className="text-xl font-bold text-gray-900">과목별 출결현황</h1>
             </div>
 
-            {/* 과목명 */}
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {courseInfo.courseName}({courseInfo.courseCode})
-              </h2>
-            </div>
+            {/* 로딩/에러/과목명 */}
+            {isLoading && (
+              <div className="mb-6 text-sm text-gray-500">출석 정보를 불러오는 중입니다...</div>
+            )}
+            {!isLoading && isError && (
+              <div className="mb-6 text-sm text-red-500">
+                출석 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+              </div>
+            )}
+            {!isLoading && !isError && detail && (
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {detail.courseName}({detail.courseCode})
+                </h2>
+              </div>
+            )}
 
             {/* 출석 테이블 */}
             <div className="overflow-x-auto">

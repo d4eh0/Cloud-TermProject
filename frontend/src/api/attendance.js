@@ -57,28 +57,25 @@ export const getAttendanceHistory = async () => {
 
 /**
  * 출석 상세 정보 조회
- * @param {number|string} id - 출석 기록 ID
- * @returns {Promise<object>}
+ * @param {number|string} courseId - 과목 ID
+ * @returns {Promise<object|null>}
  */
-export const getAttendanceDetail = async (id) => {
+export const getAttendanceDetail = async (courseId) => {
   try {
-    // TODO: 실제 API 호출
-    // const response = await fetch(`${API_BASE_URL}/attendance/${id}`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Authorization': `Bearer ${getToken()}`,
-    //   },
-    // })
-    // return await response.json()
+    const response = await fetch(`${API_BASE_URL}/attendance/detail/${courseId}`, {
+      method: 'GET',
+      credentials: 'include',
+    })
 
-    // Mock 구현
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    return {
-      id: id,
-      courseName: '데이터베이스',
-      courseCode: 1101,
-      // ... 기타 상세 정보
+    const data = await response.json()
+
+    if (!data.success) {
+      console.error('Get attendance detail failed:', data.message)
+      return null
     }
+
+    // data: AttendanceDetailDto 형태
+    return data.data || null
   } catch (error) {
     console.error('Get attendance detail error:', error)
     return null
