@@ -1,10 +1,8 @@
 package com.yu.cloudattend.yu_cloudattend.service;
 
 import com.yu.cloudattend.yu_cloudattend.dto.CourseDto;
-import com.yu.cloudattend.yu_cloudattend.entity.Course;
 import com.yu.cloudattend.yu_cloudattend.entity.Student;
 import com.yu.cloudattend.yu_cloudattend.entity.Takes;
-import com.yu.cloudattend.yu_cloudattend.repository.CourseRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.StudentRepository;
 import com.yu.cloudattend.yu_cloudattend.repository.TakesRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +18,6 @@ public class AttendanceService {
 
     private final StudentRepository studentRepository;
     private final TakesRepository takesRepository;
-    private final CourseRepository courseRepository;
 
     /**
      * 현재 로그인한 학생의 수강 과목 목록을 조회합니다.
@@ -44,16 +41,12 @@ public class AttendanceService {
         return takesList.stream()
                 .map(Takes::getCourse)
                 .distinct()
-                .map(this::toCourseDto)
+                .map(course -> new CourseDto(
+                        course.getId(),
+                        course.getCourseName(),
+                        course.getCourseCode()
+                ))
                 .collect(Collectors.toList());
-    }
-
-    private CourseDto toCourseDto(Course course) {
-        return new CourseDto(
-                course.getId(),
-                course.getCourseName(),
-                course.getCourseCode()
-        );
     }
 }
 
