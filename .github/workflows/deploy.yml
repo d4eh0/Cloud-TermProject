@@ -1,0 +1,62 @@
+name: Deploy to AWS (Bastion → App EC2)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./backend/gradlew
+
+      - name: Build Spring Boot JAR
+        working-directory: backend
+        run: ./gradlew clean build -x test
+
+      - name: Prepare SSH Keys
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/bastion.pem
+          echo "${{ secrets.APP_SSH_KEY }}" > ~/.ssh/app.key
+          chmod 600 ~/.ssh/bastion.pem
+          chmod 600 ~/.ssh/app.key
+
+      - name: Copy JAR to Bastion → App EC2
+        run: |
+          # 1) Bastion으로 JAR 파일 전송
+          scp \
+            -i ~/.ssh/bastion.pem \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            backend/build/libs/*.jar \
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }}:/tmp/app.jar
+
+          # 2) Bastion → App EC2로 JAR 파일 전달
+          ssh \
+            -i ~/.ssh/bastion.pem \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} \
+            "scp -i ~/.ssh/app.key -o StrictHostKeyChecking=no /tmp/app.jar ${{ secrets.APP_USER }}@${{ secrets.APP_HOST }}:/home/ubuntu/app/app.jar"
+
+      - name: Restart Spring Boot App on App EC2
+        run: |
+          ssh -i ~/.ssh/bastion.pem \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -J ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} \
+            ${{ secrets.APP_USER }}@${{ secrets.APP_HOST }} \
+            "sudo chmod +x /home/ubuntu/app/start.sh && sudo /home/ubuntu/app/start.sh"

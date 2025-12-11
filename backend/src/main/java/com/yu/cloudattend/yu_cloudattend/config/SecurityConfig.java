@@ -40,6 +40,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     // 로그인 경로는 인증 없이 접근 가능
                     .requestMatchers("/api/auth/login").permitAll()
+                    .requestMatchers("/actuator/health").permitAll()
                     // 나머지 경로는 인증 필요
                     .anyRequest().authenticated()
             )
