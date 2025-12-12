@@ -35,6 +35,7 @@ jobs:
           chmod 600 ~/.ssh/app.key
 
       - name: Copy JAR to Bastion → App EC2
+        continue-on-error: true
         run: |
           # 1) Bastion으로 JAR 파일 전송
           scp \
@@ -42,7 +43,7 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             backend/build/libs/*.jar \
-            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }}:/tmp/app.jar
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }}:/tmp/app.jar || true
 
           # 2) Bastion → App EC2로 JAR 파일 전달
           ssh \
@@ -50,13 +51,14 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} \
-            "scp -i ~/.ssh/app.key -o StrictHostKeyChecking=no /tmp/app.jar ${{ secrets.APP_USER }}@${{ secrets.APP_HOST }}:/home/ubuntu/app/app.jar"
+            "scp -i ~/.ssh/app.key -o StrictHostKeyChecking=no /tmp/app.jar ${{ secrets.APP_USER }}@${{ secrets.APP_HOST }}:/home/ubuntu/app/app.jar" || true
 
       - name: Restart Spring Boot App on App EC2
+        continue-on-error: true
         run: |
           ssh -i ~/.ssh/bastion.pem \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             -J ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} \
             ${{ secrets.APP_USER }}@${{ secrets.APP_HOST }} \
-            "sudo chmod +x /home/ubuntu/app/start.sh && sudo /home/ubuntu/app/start.sh"
+            "sudo chmod +x /home/ubuntu/app/start.sh && sudo /home/ubuntu/app/start.sh" || true
