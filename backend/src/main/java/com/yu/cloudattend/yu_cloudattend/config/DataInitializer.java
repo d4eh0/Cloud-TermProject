@@ -15,10 +15,10 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,7 +36,8 @@ public class DataInitializer {
     @Bean
     public ApplicationRunner initData() {
         return args -> {
-            // 1) studentId=22211111 학생 조회 또는 생성
+
+            // ── 1. 학생 ──────────────────────────────────────────────
             Student student = studentRepository.findByStudentId("22211111")
                     .orElseGet(() -> {
                         Student s = new Student();
@@ -47,154 +48,150 @@ public class DataInitializer {
                         return studentRepository.save(s);
                     });
 
-            // 2) 과목(운영체제, 컴퓨터구조, 클라우드컴퓨팅) 조회 또는 생성
+            // ── 2. 과목 ──────────────────────────────────────────────
             Course os = courseRepository.findByCourseCode("1102")
                     .orElseGet(() -> courseRepository.save(
-                            new Course(null, "운영체제", "1102", "IT관(E21-114)")
-                    ));
+                            new Course(null, "운영체제", "1102", "IT관(E21-114)")));
 
             Course arch = courseRepository.findByCourseCode("1103")
                     .orElseGet(() -> courseRepository.save(
-                            new Course(null, "컴퓨터구조", "1103", "IT관(E21-114)")
-                    ));
+                            new Course(null, "컴퓨터구조", "1103", "IT관(E21-114)")));
 
             Course cloud = courseRepository.findByCourseCode("1104")
                     .orElseGet(() -> courseRepository.save(
-                            new Course(null, "클라우드컴퓨팅", "1104", "IT관(E21-114)")
-                    ));
+                            new Course(null, "클라우드컴퓨팅", "1104", "IT관(E21-114)")));
 
-            List<Course> courses = Arrays.asList(os, arch, cloud);
+            List<Course> courses = List.of(os, arch, cloud);
 
-            // 3) 학생-과목 수강 관계(Takes) 생성 (중복 방지)
+            // ── 3. 수강 관계 ─────────────────────────────────────────
             List<Takes> existingTakes = takesRepository.findByStudent(student);
-            Set<Long> existingCourseIds = existingTakes.stream()
+            Set<Long> enrolledIds = existingTakes.stream()
                     .map(t -> t.getCourse().getId())
                     .collect(Collectors.toSet());
 
             for (Course course : courses) {
-                if (!existingCourseIds.contains(course.getId())) {
+                if (!enrolledIds.contains(course.getId())) {
                     takesRepository.save(new Takes(null, student, course));
                 }
             }
 
-            // 4) 각 과목마다 15주차 분량의 ClassSession 생성 (이미 있으면 추가하지 않음)
-            // 기준 날짜: 2025년 9월 첫 주 월요일 (2025-09-01)
-            LocalDate baseDate = LocalDate.of(2025, 9, 1); // 2025-09-01 (월요일)
+            // ── 4. 학기 시작일 자동 계산 ─────────────────────────────
+            LocalDate today = LocalDate.now();
+            int month = today.getMonthValue();
+            int year  = today.getYear();
 
-            // 운영체제: 월요일 / 수요일 10:30-11:45 (주 2회, 15주차 → 총 30회)
+            // 1~8월 → 1학기(3/1), 9~12월 → 2학기(9/1)
+            LocalDate semesterStart = (month <= 8)
+                    ? LocalDate.of(year, 3, 1)
+                    : LocalDate.of(year, 9, 1);
+
+            System.out.printf("[DataInitializer] 학기 시작일: %s%n", semesterStart);
+
+            // ── 5. 15주차 정규 세션 생성 ──────────────────────────────
+            // 운영체제: 월/수 10:30-11:45
+            LocalDate firstMonday    = nextOrSame(semesterStart, DayOfWeek.MONDAY);
+            LocalDate firstWednesday = nextOrSame(semesterStart, DayOfWeek.WEDNESDAY);
+
             for (int week = 0; week < 15; week++) {
-                // 월요일
-                LocalDate monday = baseDate.plusWeeks(week);
-                List<ClassSession> existingMon = classSessionRepository.findByCourseInAndSessionDate(
-                        List.of(os), monday);
-                if (existingMon.isEmpty()) {
-                    ClassSession session = new ClassSession(
-                            null,
-                            os,
-                            monday,
-                            LocalTime.of(10, 30),
-                            LocalTime.of(11, 45)
-                    );
-                    classSessionRepository.save(session);
-                }
-
-                // 수요일 (월요일 + 2일)
-                LocalDate wednesday = baseDate.plusWeeks(week).plusDays(2);
-                List<ClassSession> existingWed = classSessionRepository.findByCourseInAndSessionDate(
-                        List.of(os), wednesday);
-                if (existingWed.isEmpty()) {
-                    ClassSession session = new ClassSession(
-                            null,
-                            os,
-                            wednesday,
-                            LocalTime.of(10, 30),
-                            LocalTime.of(11, 45)
-                    );
-                    classSessionRepository.save(session);
-                }
+                createSessionIfAbsent(os,   firstMonday.plusWeeks(week),    LocalTime.of(10, 30), LocalTime.of(11, 45));
+                createSessionIfAbsent(os,   firstWednesday.plusWeeks(week), LocalTime.of(10, 30), LocalTime.of(11, 45));
             }
 
-            // 컴퓨터구조: 화요일 / 목요일 13:30-14:45 (주 2회, 15주차 → 총 30회)
-            LocalDate tuesdayBase = baseDate.plusDays(1); // 2025-09-02 (화요일)
-            for (int week = 0; week < 15; week++) {
-                // 화요일
-                LocalDate tuesday = tuesdayBase.plusWeeks(week);
-                List<ClassSession> existingTue = classSessionRepository.findByCourseInAndSessionDate(
-                        List.of(arch), tuesday);
-                if (existingTue.isEmpty()) {
-                    ClassSession session = new ClassSession(
-                            null,
-                            arch,
-                            tuesday,
-                            LocalTime.of(13, 30),
-                            LocalTime.of(14, 45)
-                    );
-                    classSessionRepository.save(session);
-                }
+            // 컴퓨터구조: 화/목 13:30-14:45
+            LocalDate firstTuesday  = nextOrSame(semesterStart, DayOfWeek.TUESDAY);
+            LocalDate firstThursday = nextOrSame(semesterStart, DayOfWeek.THURSDAY);
 
-                // 목요일 (화요일 + 2일)
-                LocalDate thursday = tuesdayBase.plusWeeks(week).plusDays(2);
-                List<ClassSession> existingThu = classSessionRepository.findByCourseInAndSessionDate(
-                        List.of(arch), thursday);
-                if (existingThu.isEmpty()) {
-                    ClassSession session = new ClassSession(
-                            null,
-                            arch,
-                            thursday,
-                            LocalTime.of(13, 30),
-                            LocalTime.of(14, 45)
-                    );
-                    classSessionRepository.save(session);
-                }
+            for (int week = 0; week < 15; week++) {
+                createSessionIfAbsent(arch, firstTuesday.plusWeeks(week),  LocalTime.of(13, 30), LocalTime.of(14, 45));
+                createSessionIfAbsent(arch, firstThursday.plusWeeks(week), LocalTime.of(13, 30), LocalTime.of(14, 45));
             }
 
-            // 클라우드컴퓨팅: 금요일 10:00-11:45 (주 1회, 15주차 → 총 15회)
-            // 첫 주 금요일 찾기 (2025-09-01이 월요일이므로 금요일은 2025-09-05)
-            LocalDate fridayBaseDate = baseDate.plusDays(4); // 2025-09-05 (금요일)
+            // 클라우드컴퓨팅: 금 10:00-11:45
+            LocalDate firstFriday = nextOrSame(semesterStart, DayOfWeek.FRIDAY);
+
             for (int week = 0; week < 15; week++) {
-                LocalDate sessionDate = fridayBaseDate.plusWeeks(week);
-                List<ClassSession> existing = classSessionRepository.findByCourseInAndSessionDate(
-                        List.of(cloud), sessionDate);
-                if (existing.isEmpty()) {
-                    ClassSession session = new ClassSession(
-                            null,
-                            cloud,
-                            sessionDate,
-                            LocalTime.of(10, 0),
-                            LocalTime.of(11, 45)
-                    );
-                    classSessionRepository.save(session);
-                }
+                createSessionIfAbsent(cloud, firstFriday.plusWeeks(week), LocalTime.of(10, 0), LocalTime.of(11, 45));
             }
 
-            // 5) 각 과목의 모든 세션에 대해 출석 로그 생성 (이미 있으면 추가하지 않음)
+            // ── 6. 출석 로그 생성 (오늘 이전 세션만 PRESENT) ──────────
             for (Course course : courses) {
-                List<ClassSession> courseSessions = classSessionRepository
+                List<ClassSession> sessions = classSessionRepository
                         .findByCourseInAndSessionDateBetweenOrderBySessionDateAsc(
-                                List.of(course), baseDate, baseDate.plusWeeks(20)); // 넉넉하게 범위 설정
-                
-                for (ClassSession session : courseSessions) {
-                    // 해당 학생의 해당 세션에 대한 출석 로그가 이미 있는지 확인
-                    List<AttendanceLog> existingLogs = attendanceLogRepository
-                            .findByStudentAndClassSession(student, session);
-                    
-                    if (existingLogs.isEmpty()) {
-                        // 모두 "출석" 처리 (일부는 지각/결석으로 바꿀 수도 있음)
-                        AttendanceLog log = new AttendanceLog(
-                                null,
-                                student,
-                                session,
+                                List.of(course), semesterStart, semesterStart.plusWeeks(20));
+
+                for (ClassSession session : sessions) {
+                    // 오늘 날짜 세션은 스킵 (데모 세션에서 별도 처리)
+                    if (!session.getSessionDate().isBefore(today)) continue;
+
+                    List<AttendanceLog> existing =
+                            attendanceLogRepository.findByStudentAndClassSession(student, session);
+                    if (existing.isEmpty()) {
+                        attendanceLogRepository.save(new AttendanceLog(
+                                null, student, session,
                                 AttendanceLog.AttendanceStatus.PRESENT,
                                 LocalDateTime.of(session.getSessionDate(), session.getStartTime().plusMinutes(5)),
-                                null,
-                                null
-                        );
-                        attendanceLogRepository.save(log);
+                                null, null
+                        ));
                     }
                 }
             }
 
-            System.out.println("[DataInitializer] 초기 과목, Takes, ClassSession, AttendanceLog 데이터가 준비되었습니다.");
+            // ── 7. 오늘 날짜 데모 세션 생성/갱신 ────────────────────────
+            // 정규 세션이 오늘과 겹칠 수 있으므로 기존 세션을 찾아 시간을 덮어씀
+            LocalTime now  = LocalTime.now();
+            LocalTime base = now.withMinute((now.getMinute() / 10) * 10).withSecond(0).withNano(0);
+
+            // 운영체제: 이미 끝난 수업 (base -2h ~ -1h) + 출석 처리
+            ClassSession osSession = upsertTodaySession(os, today,
+                    base.minusHours(2), base.minusHours(1));
+            if (attendanceLogRepository.findByStudentAndClassSession(student, osSession).isEmpty()) {
+                attendanceLogRepository.save(new AttendanceLog(
+                        null, student, osSession,
+                        AttendanceLog.AttendanceStatus.PRESENT,
+                        LocalDateTime.of(today, osSession.getStartTime().plusMinutes(5)),
+                        null, null
+                ));
+            }
+            System.out.printf("[DataInitializer] 오늘 운영체제 세션: %s ~ %s (출석 완료)%n",
+                    osSession.getStartTime(), osSession.getEndTime());
+
+            // 컴퓨터구조: 수업 5분 전 (base +10분 시작, 10분 단위 유지)
+            LocalTime archStart = base.plusMinutes(10);
+            ClassSession archSession = upsertTodaySession(arch, today, archStart, archStart.plusMinutes(80));
+            System.out.printf("[DataInitializer] 오늘 컴퓨터구조 세션: %s ~ %s (수업 중)%n",
+                    archSession.getStartTime(), archSession.getEndTime());
+
+            // 클라우드컴퓨팅: 이따 수업 (base +2h ~ +3h20m)
+            LocalTime cloudStart = base.plusHours(2);
+            ClassSession cloudSession = upsertTodaySession(cloud, today, cloudStart, cloudStart.plusMinutes(80));
+            System.out.printf("[DataInitializer] 오늘 클라우드컴퓨팅 세션: %s ~ %s (수업 전)%n",
+                    cloudSession.getStartTime(), cloudSession.getEndTime());
+
+            System.out.println("[DataInitializer] 초기화 완료.");
         };
+    }
+
+    private void createSessionIfAbsent(Course course, LocalDate date, LocalTime start, LocalTime end) {
+        if (classSessionRepository.findByCourseInAndSessionDate(List.of(course), date).isEmpty()) {
+            classSessionRepository.save(new ClassSession(null, course, date, start, end));
+        }
+    }
+
+    /** 오늘 세션이 있으면 시간을 덮어쓰고, 없으면 새로 생성해서 반환 */
+    private ClassSession upsertTodaySession(Course course, LocalDate date, LocalTime start, LocalTime end) {
+        List<ClassSession> existing = classSessionRepository.findByCourseInAndSessionDate(List.of(course), date);
+        if (!existing.isEmpty()) {
+            ClassSession session = existing.get(0);
+            session.setStartTime(start);
+            session.setEndTime(end);
+            return classSessionRepository.save(session);
+        }
+        return classSessionRepository.save(new ClassSession(null, course, date, start, end));
+    }
+
+    /** semesterStart 당일 포함, 해당 요일이거나 그 이후 첫 번째 날짜 반환 */
+    private LocalDate nextOrSame(LocalDate from, DayOfWeek dow) {
+        int diff = (dow.getValue() - from.getDayOfWeek().getValue() + 7) % 7;
+        return from.plusDays(diff);
     }
 }

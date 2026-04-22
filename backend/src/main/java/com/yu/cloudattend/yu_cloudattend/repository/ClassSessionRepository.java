@@ -17,6 +17,9 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
     // 특정 과목들에 대해, 날짜 범위 내의 세션 목록 조회 (날짜 오름차순)
     List<ClassSession> findByCourseInAndSessionDateBetweenOrderBySessionDateAsc(
             List<Course> courses, LocalDate startDate, LocalDate endDate);
+
+    // 특정 과목의 모든 세션 조회 (날짜 오름차순)
+    List<ClassSession> findByCourseOrderBySessionDateAsc(Course course);
 }
 
 

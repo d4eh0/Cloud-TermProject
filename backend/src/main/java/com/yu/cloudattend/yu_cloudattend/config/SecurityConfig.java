@@ -38,10 +38,9 @@ public class SecurityConfig {
             
             // 요청 권한 설정
             .authorizeHttpRequests(auth -> auth
-                    // 로그인 경로는 인증 없이 접근 가능
                     .requestMatchers("/api/auth/login").permitAll()
-                    .requestMatchers("/actuator/health").permitAll()
-                    // 나머지 경로는 인증 필요
+                    .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/api/load-test/**").permitAll()
                     .anyRequest().authenticated()
             )
             

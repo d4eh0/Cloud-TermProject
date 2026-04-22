@@ -2,7 +2,7 @@
  * 출석 관련 API 함수
  */
  
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
 /**
  * 오늘의 수업 목록 조회
@@ -83,6 +83,25 @@ export const getAttendanceDetail = async (courseId) => {
 }
 
 /**
+ * 현재 출석 가능한 세션 자동 조회 (토큰 없이 접속 시 사용)
+ * @returns {Promise<object|null>}
+ */
+export const getAvailableSession = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/attendance/available`, {
+      method: 'GET',
+      credentials: 'include',
+    })
+    const data = await response.json()
+    if (!data.success) return null
+    return data.data || null
+  } catch (error) {
+    console.error('Get available session error:', error)
+    return null
+  }
+}
+
+/**
  * 토큰으로 출석 세션 정보 조회
  * @param {string} token - 출석 토큰
  * @returns {Promise<object|null>}
@@ -111,12 +130,11 @@ export const getSessionByToken = async (token) => {
 
 /**
  * 출석 체크 요청
- * @param {object} attendanceData - 출석 데이터
- * @param {number} attendanceData.lectureId - 수업 ID (ClassSession.id)
- * @param {number} attendanceData.latitude - 위도
- * @param {number} attendanceData.longitude - 경도
- * @param {string} attendanceData.deviceId - 기기 ID
- * @param {string} attendanceData.captchaToken - CAPTCHA 토큰
+ * @param {object} attendanceData
+ * @param {number} attendanceData.lectureId
+ * @param {number} attendanceData.latitude
+ * @param {number} attendanceData.longitude
+ * @param {string} attendanceData.deviceId
  * @returns {Promise<{success: boolean, data?: object, message?: string}>}
  */
 export const requestAttendance = async (attendanceData) => {

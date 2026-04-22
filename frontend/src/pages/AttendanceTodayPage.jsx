@@ -155,31 +155,30 @@ function AttendanceTodayPage() {
             <RefreshButton onClick={handleRefresh} isRefreshing={isRefreshing} />
 
             {/* 오늘의 수업 목록 (스크롤 가능) */}
-            <div 
-              className="max-h-[500px] overflow-y-scroll border border-gray-200 rounded-xl p-4 space-y-4"
+            <div
+              className="overflow-y-auto border border-gray-200 rounded-xl p-3 space-y-2"
               style={{
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgb(157, 157, 156) rgb(243, 244, 246)',
               }}
             >
             {todayLectures.length === 0 ? (
-              <div className="w-full py-8 text-center text-sm text-gray-500">
+              <div className="w-full py-6 text-center text-sm text-gray-500">
                 오늘은 출석 대상 수업이 없습니다.
               </div>
             ) : (
               todayLectures.map((lecture) => {
                 const { style, text } = getAttendanceButtonInfo(lecture)
-                
                 return (
                 <div
                   key={lecture.id}
-                    className="bg-white rounded-2xl shadow border border-gray-200 p-5 relative"
+                  className="bg-white rounded-xl border border-gray-200 px-4 py-3"
                 >
                   {/* 과목명 및 상세보기 링크 */}
-                  <div className="flex items-start justify-between mb-4">
-                    <h2 className="text-lg font-bold text-gray-900">
-                  {lecture.courseName}
-                </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-base font-bold text-gray-900">
+                      {lecture.courseName}
+                    </h2>
                     <button
                       onClick={() => navigate(`/attendance/history/detail/${lecture.courseId || lecture.id}`)}
                       className="text-xs text-gray-400 underline hover:text-gray-600 transition-colors"
@@ -189,58 +188,27 @@ function AttendanceTodayPage() {
                   </div>
 
                   {/* 과목 정보 */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
+                  <div className="space-y-1 mb-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span>{lecture.date}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>{lecture.time}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <span>{lecture.location}</span>
                     </div>
@@ -250,10 +218,10 @@ function AttendanceTodayPage() {
                   <button
                     onClick={() => handleAttendanceClick(lecture)}
                     disabled={lecture.attendanceStatus !== '미확인'}
-                    className="w-full rounded-2xl py-3 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:cursor-default disabled:opacity-75"
-                      style={style}
+                    className="w-full rounded-xl py-2 px-4 font-semibold text-xs flex items-center justify-center gap-2 transition-colors disabled:cursor-default disabled:opacity-75"
+                    style={style}
                   >
-                      <span>{text}</span>
+                    <span>{text}</span>
                   </button>
                 </div>
                 )

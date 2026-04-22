@@ -10,10 +10,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AttendanceCheckRequest {
-    private Long lectureId;        // 수업 세션 ID (ClassSession.id)
-    private Double latitude;       // 위도
-    private Double longitude;      // 경도
-    private String deviceId;       // 기기 ID
-    private String captchaToken;  // CAPTCHA 토큰 (향후 검증용)
+    private Long lectureId;
+    private Double latitude;
+    private Double longitude;
+    private String deviceId;
 }
-

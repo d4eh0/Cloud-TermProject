@@ -37,6 +37,10 @@ dependencies {
 	// .env 파일 지원
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 	
+	// Actuator + Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 	// JWT 라이브러리
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'

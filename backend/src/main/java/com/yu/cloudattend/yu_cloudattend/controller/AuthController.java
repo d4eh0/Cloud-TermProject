@@ -3,13 +3,13 @@ package com.yu.cloudattend.yu_cloudattend.controller;
 import com.yu.cloudattend.yu_cloudattend.dto.LoginRequest;
 import com.yu.cloudattend.yu_cloudattend.dto.LoginResponse;
 import com.yu.cloudattend.yu_cloudattend.dto.UserDto;
-import com.yu.cloudattend.yu_cloudattend.security.JwtAuthenticationFilter;
 import com.yu.cloudattend.yu_cloudattend.service.AuthService;
-import com.yu.cloudattend.yu_cloudattend.util.JwtUtil;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,103 +23,96 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
     private final AuthService authService;
-    private final JwtUtil jwtUtil;
-    
+
     private static final String COOKIE_NAME = "accessToken";
-    
-    @Value("${jwt.expiration:3600000}") // 기본값 60분 (밀리초)
+
+    @Value("${jwt.expiration:3600000}")
     private Long expiration;
-    
-    /**
-     * 로그인 API
-     */
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletResponse response) {
-        
-        // 로그인 처리
+
+        long start = System.currentTimeMillis();
+        log.info("[AuthController] POST /api/auth/login - studentId={}", loginRequest.getStudentId());
+
         LoginResponse loginResponse = authService.login(
                 loginRequest.getStudentId(),
                 loginRequest.getPassword()
         );
-        
-        // 로그인 성공 시 JWT 토큰을 쿠키에 저장
+
         if (loginResponse.isSuccess()) {
-            // 토큰 생성 (AuthService에서 이미 생성했지만, 여기서 다시 생성)
-            // 실제로는 AuthService에서 토큰을 반환하도록 수정하는 것이 좋지만,
-            // 일단 여기서 생성
-            String token = jwtUtil.generateToken(
-                    loginResponse.getUser().getId(),
-                    loginResponse.getUser().getStudentId()
-            );
-            
-            // HttpOnly + Secure 쿠키 설정
+            String token = loginResponse.getToken();
+
             Cookie cookie = new Cookie(COOKIE_NAME, token);
             cookie.setHttpOnly(true);
-            cookie.setSecure(false); // 로컬 개발 시 false, 프로덕션에서는 true
+            cookie.setSecure(false);
             cookie.setPath("/");
-            cookie.setMaxAge((int) (expiration / 1000)); // 초 단위로 변환
-            // SameSite 설정은 Servlet API 버전에 따라 다를 수 있음
+            cookie.setMaxAge((int) (expiration / 1000));
             response.addCookie(cookie);
+
+            log.info("[AuthController] 로그인 성공 - studentId={}, elapsed={}ms",
+                    loginRequest.getStudentId(), System.currentTimeMillis() - start);
+        } else {
+            log.warn("[AuthController] 로그인 실패 - studentId={}, reason={}, elapsed={}ms",
+                    loginRequest.getStudentId(), loginResponse.getMessage(), System.currentTimeMillis() - start);
         }
-        
+
         return ResponseEntity.ok(loginResponse);
     }
-    
-    /**
-     * 현재 로그인한 사용자 정보 조회 API
-     */
+
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getCurrentUser() {
+        long start = System.currentTimeMillis();
+        log.info("[AuthController] GET /api/auth/me");
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
+
         if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("[AuthController] /me - 인증되지 않은 요청");
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "인증되지 않은 사용자입니다.");
             return ResponseEntity.status(401).body(response);
         }
-        
-        // SecurityContext에서 사용자 ID 추출
+
         Long userId = (Long) authentication.getPrincipal();
-        
-        // 사용자 정보 조회
         UserDto userDto = authService.getUserById(userId);
-        
+
         if (userDto == null) {
+            log.warn("[AuthController] /me - 사용자 정보 없음 userId={}", userId);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "사용자 정보를 찾을 수 없습니다.");
             return ResponseEntity.status(404).body(response);
         }
-        
+
+        log.info("[AuthController] /me 응답 - userId={}, elapsed={}ms", userId, System.currentTimeMillis() - start);
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("user", userDto);
-        
         return ResponseEntity.ok(response);
     }
-    
-    /**
-     * 로그아웃 API
-     */
+
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logout(HttpServletResponse response) {
-        // 쿠키 삭제 (Max-Age=0 설정)
+        log.info("[AuthController] POST /api/auth/logout");
+
         Cookie cookie = new Cookie(COOKIE_NAME, null);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false); // 로컬 개발 시 false, 프로덕션에서는 true
+        cookie.setSecure(false);
         cookie.setPath("/");
-        cookie.setMaxAge(0); // 즉시 삭제
+        cookie.setMaxAge(0);
         response.addCookie(cookie);
-        
+
+        log.info("[AuthController] 로그아웃 완료");
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
-        
         return ResponseEntity.ok(result);
     }
 }
-

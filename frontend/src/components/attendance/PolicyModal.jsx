@@ -100,17 +100,7 @@ function PolicyModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* CAPTCHA 검증 */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              CAPTCHA 검증
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              어뷰징 방지를 위해 출석 과정에서
-              <br />
-              CAPTCHA를 통한 간단한 확인 절차를 진행합니다.
-            </p>
-          </div>
+
         </div>
 
         {/* 모달 푸터 */}

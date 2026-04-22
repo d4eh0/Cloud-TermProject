@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
 
@@ -8,6 +8,7 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showTestAccount, setShowTestAccount] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -130,30 +131,56 @@ function LoginPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (!isLoading) {
-                    e.target.style.backgroundColor = 'rgb(21, 57, 116)'
+                    e.currentTarget.style.backgroundColor = 'rgb(21, 57, 116)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isLoading) {
-                    e.target.style.backgroundColor = 'rgb(0, 170, 202)'
+                    e.currentTarget.style.backgroundColor = 'rgb(0, 170, 202)'
                   }
                 }}
               >
                 <span className="text-lg"></span>
                 <span>{isLoading ? '로그인 중...' : '로그인'}</span>
               </button>
+
+              {/* 테스트 계정 토글 */}
+              <div className="flex justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTestAccount((v) => !v)}
+                  className="text-xs text-gray-400 underline underline-offset-2 hover:text-gray-500 transition-colors"
+                >
+                  테스트 계정정보
+                </button>
+              </div>
+
+              {showTestAccount && (
+                <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="space-y-1 text-xs text-gray-600">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">학번</span>
+                      <span className="font-mono">22211111</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">비밀번호</span>
+                      <span className="font-mono">1q2w3e4r!</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
 
           {/* 하단 안내 영역 */}
-          <div className="mt-6 text-center text-[11px] text-gray-400 leading-relaxed">
+          <div className="mt-4 text-center text-[11px] text-gray-400 leading-relaxed">
             <p className="font-semibold text-xs text-gray-500">
               YU-CloudAttend
             </p>
-            <p className="mt-1">
-              실제 서비스로 구현된다면, 학교 통합 로그인과 연동되어
-              <br />
-              출석 기록은 학교 서버에 안전하게 저장됩니다.
+            <p className="mt-20 text-left">
+              *본 서비스는 데모 버전입니다.<br />
+              *실제 서비스에서는 학교 시스템과 연동되어
+              수업 시간표 및 GPS 검증이 적용됩니다.
             </p>
           </div>
         </div>
