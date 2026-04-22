@@ -18,6 +18,9 @@ FROM nginx:alpine
 # Stage 1에서 만든 빌드 결과물을 nginx 기본 서빙 경로로 복사
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# SPA fallback 설정
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # HTTP 기본 포트
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
