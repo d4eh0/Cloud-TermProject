@@ -57,12 +57,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // 프론트엔드 origin 허용 (로컬 개발용)
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",  // Vite 기본 포트
-                "http://localhost:3000",  // React 기본 포트
-                "http://localhost:8080"   // 다른 포트
-        ));
+        // nginx 리버스 프록시 뒤에서 동작하므로 전체 허용
+        // allowCredentials(true)와 함께 쓰려면 setAllowedOrigins("*") 대신 setAllowedOriginPatterns("*") 사용
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         // 허용할 HTTP 메서드
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
