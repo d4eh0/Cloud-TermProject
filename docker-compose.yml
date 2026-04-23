@@ -58,8 +58,39 @@ services:
     networks:
       - app-network
 
+  # Prometheus - 메트릭 수집 및 저장
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  # Grafana - 시각화
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+  # Node Exporter - 호스트 OS 메트릭 수집
+  node-exporter:
+    image: prom/node-exporter
+    networks:
+      - app-network
+
 volumes:
   mysql_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   app-network:
