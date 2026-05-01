@@ -18,6 +18,7 @@ services:
   backend:
     build: ./backend
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       DB_HOST: mysql    # IP주소 대신 컨테이너 이름으로 DB에 접근하는 모습
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE}
