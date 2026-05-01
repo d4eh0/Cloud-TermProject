@@ -1,5 +1,4 @@
 services:
-
   # MySQL 데이터베이스
   mysql:
     image: mysql:8
@@ -8,25 +7,54 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    # 컨테이너가 꺼져도 DB 데이터 날아가면 안되니까 볼륨에 저장
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
 
-  # Spring Boot 백엔드
-  backend:
+  # Spring Boot 백엔드 - 3개로 scale-out
+  backend1:
     build: ./backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_HOST: mysql    # IP주소 대신 컨테이너 이름으로 DB에 접근하는 모습
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE}
       DB_USERNAME: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      - mysql # 실행순서 !!!, mysql 컨테이너 먼저 뜬 다음에 backend 실행
+      - mysql
+    networks:
+      - app-network
+
+  backend2:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  backend3:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - mysql
     networks:
       - app-network
 
@@ -34,7 +62,9 @@ services:
   frontend:
     build: ./frontend
     depends_on:
-      - backend
+      - backend1
+      - backend2
+      - backend3
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 5s
@@ -52,14 +82,18 @@ services:
     depends_on:
       frontend:
         condition: service_healthy
-      backend:
+      backend1:
+        condition: service_started
+      backend2:
+        condition: service_started
+      backend3:
         condition: service_started
     ports:
       - "80:80"
     networks:
       - app-network
 
-  # Prometheus - 메트릭 수집 및 저장
+  # Prometheus
   prometheus:
     image: prom/prometheus
     volumes:
@@ -70,7 +104,7 @@ services:
     networks:
       - app-network
 
-  # Grafana - 시각화
+  # Grafana
   grafana:
     image: grafana/grafana
     volumes:
@@ -82,7 +116,7 @@ services:
     networks:
       - app-network
 
-  # Node Exporter - 호스트 OS 메트릭 수집
+  # Node Exporter
   node-exporter:
     image: prom/node-exporter
     networks:
