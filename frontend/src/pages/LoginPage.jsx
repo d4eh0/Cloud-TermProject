@@ -160,7 +160,7 @@ function LoginPage() {
                   <div className="space-y-1 text-xs text-gray-600">
                     <div className="flex justify-between">
                       <span className="text-gray-400">학번</span>
-                      <span className="font-mono">22211111</span>
+                      <span className="font-mono">22211111, 2000001~2000500</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">비밀번호</span>
